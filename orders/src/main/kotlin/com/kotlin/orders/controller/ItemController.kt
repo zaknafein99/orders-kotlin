@@ -17,9 +17,7 @@ class ItemController(val itemService: ItemService) {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getItems(): List<ItemDTO> {
-        return itemService.getItems()
-    }
+    fun getItems(): List<ItemDTO> = itemService.getItems()
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)

@@ -26,8 +26,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
     }
 
     fun getCustomers(): List<CustomerDTO> {
-        val customers = customerRepository.findAll()
-        return customers.map {
+        return customerRepository.findAll().map {
             CustomerDTO(it.id, it.name, it.address, it.phoneNumber)
         }
     }

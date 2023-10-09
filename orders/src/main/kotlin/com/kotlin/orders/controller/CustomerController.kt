@@ -22,9 +22,7 @@ class CustomerController(val customerService: CustomerService) {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getCustomers(): List<CustomerDTO> {
-        return customerService.getCustomers()
-    }
+    fun getCustomers(): List<CustomerDTO> = customerService.getCustomers()
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)

@@ -26,8 +26,7 @@ class ItemService(val itemRepository: ItemRepository){
 
     fun getItems(): List<ItemDTO> {
 
-        val items = itemRepository.findAll()
-        return items.map {
+        return itemRepository.findAll().map {
             ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
         }
 

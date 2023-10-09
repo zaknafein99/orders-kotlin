@@ -17,7 +17,6 @@ class TruckController(val truckService: TruckService) {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getTrucks(): List<TruckDTO> {
-        return truckService.getTrucks()
-    }
+    fun getTrucks(): List<TruckDTO> = truckService.getTrucks()
+
 }

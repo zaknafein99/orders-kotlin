@@ -24,8 +24,7 @@ class TruckService(val truckRepository: TruckRepository){
 
     fun getTrucks(): List<TruckDTO> {
 
-        val trucks = truckRepository.findAll()
-        return trucks.map {
+        return truckRepository.findAll().map {
             TruckDTO(it.id, it.name)
         }
 

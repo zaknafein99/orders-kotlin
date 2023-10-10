@@ -2,6 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.TruckDTO
 import com.kotlin.orders.entity.Truck
+import com.kotlin.orders.exception.TruckNotFoundException
 import com.kotlin.orders.repository.TruckRepository
 import mu.KLogging
 import org.springframework.stereotype.Service
@@ -27,6 +28,21 @@ class TruckService(val truckRepository: TruckRepository){
         return truckRepository.findAll().map {
             TruckDTO(it.id, it.name)
         }
+
+    }
+
+    fun updateTruck(truckId: Int, truckDTO: TruckDTO): TruckDTO {
+
+            val existingTruck = truckRepository.findById(truckId)
+            return if(existingTruck.isPresent){
+                existingTruck.let {
+                    it.get().name = truckDTO.name
+                    truckRepository.save(it.get())
+                    TruckDTO(it.get().id, it.get().name)
+                }
+            }else{
+                throw TruckNotFoundException("Truck not found with id: $truckId")
+            }
 
     }
 

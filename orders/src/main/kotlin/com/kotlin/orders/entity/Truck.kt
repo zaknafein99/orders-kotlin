@@ -8,5 +8,5 @@ data class Truck(
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Int?,
-    val name: String,
+    var name: String,
 )

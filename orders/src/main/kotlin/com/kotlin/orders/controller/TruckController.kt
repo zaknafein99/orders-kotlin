@@ -15,6 +15,10 @@ class TruckController(val truckService: TruckService) {
         return truckService.addTruck(truckDTO)
     }
 
+    @PutMapping("/{truck_id}")
+    @ResponseStatus(HttpStatus.OK)
+    fun updateTruck(@RequestBody truckDTO: TruckDTO, @PathVariable("truck_id") truckId: Int) = truckService.updateTruck(truckId, truckDTO)
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getTrucks(): List<TruckDTO> = truckService.getTrucks()

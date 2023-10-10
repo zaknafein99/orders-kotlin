@@ -2,6 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.CustomerDTO
 import com.kotlin.orders.entity.Customer
+import com.kotlin.orders.exception.CustomerNotFoundException
 import com.kotlin.orders.repository.CustomerRepository
 import mu.KLogging
 import org.springframework.stereotype.Service
@@ -43,6 +44,22 @@ class CustomerService(val customerRepository: CustomerRepository) {
             CustomerDTO(it.id, it.name, it.address, it.phoneNumber)
         }
 
+    }
+
+    fun updateCustomer(courseId: Int, customerDTO: CustomerDTO): CustomerDTO {
+
+        val existingCustomer = customerRepository.findById(courseId)
+        return if(existingCustomer.isPresent){
+            existingCustomer.let {
+                it.get().name = customerDTO.name
+                it.get().address = customerDTO.address
+                it.get().phoneNumber = customerDTO.phoneNumber
+                customerRepository.save(it.get())
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber)
+            }
+        }else{
+            throw CustomerNotFoundException("Customer not found with id: $courseId")
+        }
     }
 }
 

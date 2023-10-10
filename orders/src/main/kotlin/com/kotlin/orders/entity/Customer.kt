@@ -8,6 +8,6 @@ data class Customer (
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Int?,
-    val name: String,
-    val address: String,
-    val phoneNumber: String)
+    var name: String,
+    var address: String,
+    var phoneNumber: String)

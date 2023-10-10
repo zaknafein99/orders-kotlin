@@ -2,6 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.ItemDTO
 import com.kotlin.orders.entity.Item
+import com.kotlin.orders.exception.ItemNotFoundException
 import com.kotlin.orders.repository.ItemRepository
 import mu.KLogging
 import org.springframework.stereotype.Service
@@ -43,6 +44,25 @@ class ItemService(val itemRepository: ItemRepository){
         return itemEntity.map {
             ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
         }
+
+    }
+
+    fun updateItem(itemId: Int, itemDTO: ItemDTO): ItemDTO {
+
+            val existingItem = itemRepository.findById(itemId)
+            return if(existingItem.isPresent){
+                existingItem.let {
+                    it.get().name = itemDTO.name
+                    it.get().description = itemDTO.description
+                    it.get().price = itemDTO.price
+                    it.get().quantity = itemDTO.quantity
+                    it.get().category = itemDTO.category
+                    itemRepository.save(it.get())
+                    ItemDTO(it.get().id, it.get().name, it.get().description, it.get().price, it.get().quantity, it.get().category)
+                }
+            }else{
+                throw ItemNotFoundException("Item not found with id $itemId")
+            }
 
     }
 

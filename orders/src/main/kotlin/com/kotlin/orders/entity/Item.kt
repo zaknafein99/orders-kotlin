@@ -8,8 +8,8 @@ data class Item(
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Int?,
-    val name: String,
-    val description: String,
-    val price: Double,
-    val quantity: Int,
-    val category: String)
+    var name: String,
+    var description: String,
+    var price: Double,
+    var quantity: Int,
+    var category: String)

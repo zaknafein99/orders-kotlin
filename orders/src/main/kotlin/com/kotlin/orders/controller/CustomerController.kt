@@ -3,6 +3,7 @@ package com.kotlin.orders.controller
 import com.kotlin.orders.dto.CustomerDTO
 import com.kotlin.orders.service.CustomerService
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -25,6 +26,10 @@ class CustomerController(val customerService : CustomerService) {
     @PutMapping("/{course_id}")
     @ResponseStatus(HttpStatus.OK)
     fun updateCustomer(@RequestBody customerDTO: CustomerDTO, @PathVariable("course_id") courseId: Int) = customerService.updateCustomer(courseId, customerDTO)
+
+    @DeleteMapping("/{course_id}")
+    @ResponseStatus(HttpStatus.OK)
+    fun deleteCustomer(@PathVariable("course_id") courseId: Int) = customerService.deleteCustomer(courseId)
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)

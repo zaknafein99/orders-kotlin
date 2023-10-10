@@ -61,5 +61,16 @@ class CustomerService(val customerRepository: CustomerRepository) {
             throw CustomerNotFoundException("Customer not found with id: $courseId")
         }
     }
+
+    fun deleteCustomer(courseId: Int){
+        val existingCustomer = customerRepository.findById(courseId)
+         if(existingCustomer.isPresent){
+            existingCustomer.let {
+                customerRepository.delete(it.get())
+            }
+        }else{
+            throw CustomerNotFoundException("Customer not found with id: $courseId")
+        }
+    }
 }
 

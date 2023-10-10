@@ -66,4 +66,16 @@ class ItemService(val itemRepository: ItemRepository){
 
     }
 
+    fun deleteItem(itemId: Int){
+        val existingItem = itemRepository.findById(itemId)
+         if(existingItem.isPresent){
+            existingItem.let {
+                itemRepository.delete(it.get())
+            }
+        }else{
+            throw ItemNotFoundException("Item not found with id $itemId")
+        }
+
+    }
+
 }

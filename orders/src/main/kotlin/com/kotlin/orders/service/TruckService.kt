@@ -46,4 +46,15 @@ class TruckService(val truckRepository: TruckRepository){
 
     }
 
+    fun deleteTruck(truckId: Int){
+
+        val existingTruck = truckRepository.findById(truckId)
+        if(existingTruck.isPresent){
+            truckRepository.deleteById(truckId)
+        }else{
+            throw TruckNotFoundException("Truck not found with id: $truckId")
+        }
+
+    }
+
 }

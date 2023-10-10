@@ -20,7 +20,7 @@ class TruckController(val truckService: TruckService) {
     fun updateTruck(@RequestBody truckDTO: TruckDTO, @PathVariable("truck_id") truckId: Int) = truckService.updateTruck(truckId, truckDTO)
 
     @DeleteMapping("/{truck_id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteTruck(@PathVariable("truck_id") truckId: Int) = truckService.deleteTruck(truckId)
 
     @GetMapping

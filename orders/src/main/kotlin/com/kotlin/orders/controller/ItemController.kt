@@ -20,7 +20,7 @@ class ItemController(val itemService: ItemService) {
     fun updateItem(@RequestBody itemDTO: ItemDTO, @PathVariable("item_id") itemId: Int) = itemService.updateItem(itemId, itemDTO)
 
     @DeleteMapping("/{item_id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteItem(@PathVariable("item_id") itemId: Int) = itemService.deleteItem(itemId)
 
     @GetMapping

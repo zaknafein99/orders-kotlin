@@ -28,7 +28,7 @@ class CustomerController(val customerService : CustomerService) {
     fun updateCustomer(@RequestBody customerDTO: CustomerDTO, @PathVariable("course_id") courseId: Int) = customerService.updateCustomer(courseId, customerDTO)
 
     @DeleteMapping("/{course_id}")
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteCustomer(@PathVariable("course_id") courseId: Int) = customerService.deleteCustomer(courseId)
 
     @GetMapping

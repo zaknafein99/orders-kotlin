@@ -2,16 +2,19 @@ package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.ItemDTO
 import com.kotlin.orders.service.ItemService
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/item")
+@Validated
 class ItemController(val itemService: ItemService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun addItem(@RequestBody itemDto: ItemDTO): ItemDTO {
+    fun addItem(@RequestBody @Valid itemDto: ItemDTO): ItemDTO {
         return itemService.addItem(itemDto)
     }
 
@@ -29,7 +32,7 @@ class ItemController(val itemService: ItemService) {
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)
-    fun addListOfItems (@RequestBody itemDTO: List<ItemDTO>): List<ItemDTO> {
+    fun addListOfItems (@RequestBody @Valid itemDTO: List<ItemDTO>): List<ItemDTO> {
         return itemService.addListOfItems(itemDTO)
     }
 }

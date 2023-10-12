@@ -2,7 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.ItemDTO
 import com.kotlin.orders.entity.Item
-import com.kotlin.orders.exception.ItemNotFoundException
+import com.kotlin.orders.exceptionhandler.ItemNotFoundException
 import com.kotlin.orders.repository.ItemRepository
 import mu.KLogging
 import org.springframework.stereotype.Service

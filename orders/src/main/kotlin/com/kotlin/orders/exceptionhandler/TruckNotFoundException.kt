@@ -1,4 +1,4 @@
-package com.kotlin.orders.exception
+package com.kotlin.orders.exceptionhandler
 
 import java.lang.RuntimeException
 

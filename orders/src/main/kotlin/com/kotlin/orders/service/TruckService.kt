@@ -2,7 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.TruckDTO
 import com.kotlin.orders.entity.Truck
-import com.kotlin.orders.exception.TruckNotFoundException
+import com.kotlin.orders.exceptionhandler.TruckNotFoundException
 import com.kotlin.orders.repository.TruckRepository
 import mu.KLogging
 import org.springframework.stereotype.Service

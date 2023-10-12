@@ -43,4 +43,10 @@ class CustomerController(val customerService : CustomerService) {
     fun addListOfCustomers (@RequestBody @Valid customerDTO: List<CustomerDTO>): List<CustomerDTO> {
         return customerService.addListOfCustomers(customerDTO)
     }
+
+    @GetMapping("/search_phone/{phone_number}")
+    @ResponseStatus(HttpStatus.OK)
+    fun getCustomerByPhoneNumber(@PathVariable("phone_number") phoneNumber: String): List<CustomerDTO> {
+        return customerService.getCustomerByPhoneNumber(phoneNumber)
+    }
 }

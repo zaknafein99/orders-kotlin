@@ -15,33 +15,33 @@ class CustomerService(val customerRepository: CustomerRepository) {
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerDTO.let {
-            Customer(null, it.name, it.address, it.phoneNumber)
+            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
         customerRepository.save(customerEntity)
 
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.let {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber)
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
     }
 
     fun getCustomers(): List<CustomerDTO> {
         return customerRepository.findAll().map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber)
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
         val customerEntity = customerDTO.map {
-            Customer(null, it.name, it.address, it.phoneNumber)
+            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber)
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
 
     }
@@ -55,7 +55,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
                 it.get().address = customerDTO.address
                 it.get().phoneNumber = customerDTO.phoneNumber
                 customerRepository.save(it.get())
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber)
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $courseId")
@@ -78,7 +78,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findByPhoneNumber(phoneNumber)
         return if (existingCustomer.isNotEmpty()) {
             existingCustomer.map {
-                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber)
+                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber, it.type, it.state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")
@@ -90,7 +90,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findById(customerId)
         return if (existingCustomer.isPresent) {
             existingCustomer.let {
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber)
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")

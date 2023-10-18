@@ -21,4 +21,8 @@ class OrderController(val orderService: OrderService) {
     @ResponseStatus(HttpStatus.OK)
     fun getOrders(): List<OrderDTO> = orderService.getOrders()
 
+    @GetMapping("/customer")
+    @ResponseStatus(HttpStatus.OK)
+    fun getOrdersByCustomer(@RequestParam phoneNumber: String): List<OrderDTO> = orderService.getOrdersByCustomer(phoneNumber)
+
     }

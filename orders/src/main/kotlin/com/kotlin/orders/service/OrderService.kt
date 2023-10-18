@@ -88,5 +88,37 @@ class OrderService(val customerRepository : CustomerRepository,
             )
         }
     }
+
+    fun getOrdersByCustomer(phoneNumber: String): List<OrderDTO> {
+        val orders = orderRepository.findAll()
+    
+        return orders.filter { it.customer.phoneNumber == phoneNumber }.map { order ->
+            OrderDTO(
+                id = order.id,
+                customer = CustomerDTO(
+                    id = order.customer.id,
+                    name = order.customer.name,
+                    address = order.customer.address,
+                    phoneNumber = order.customer.phoneNumber,
+                ),
+                items = order.items.map { item ->
+                    ItemDTO(
+                        id = item.id,
+                        name = item.name,
+                        quantity = item.quantity,
+                        price = item.price,
+                        category = item.category,
+                        description = item.description
+                    )
+                },
+                truck = TruckDTO(
+                    id = order.truck.id,
+                    name = order.truck.name
+                ),
+                date = order.date,
+                totalPrice = order.totalPrice
+            )
+        }
+    }
 }
 

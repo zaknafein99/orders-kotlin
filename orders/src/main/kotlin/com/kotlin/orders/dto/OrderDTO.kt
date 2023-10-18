@@ -1,8 +1,5 @@
 package com.kotlin.orders.dto
 
-import com.kotlin.orders.entity.Customer
-import com.kotlin.orders.entity.Item
-import com.kotlin.orders.entity.Truck
 import jakarta.annotation.Nullable
 import jakarta.validation.constraints.NotBlank
 import java.time.LocalDateTime

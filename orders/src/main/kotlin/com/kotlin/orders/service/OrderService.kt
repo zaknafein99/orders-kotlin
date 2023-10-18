@@ -68,6 +68,8 @@ class OrderService(val customerRepository : CustomerRepository,
                     name = order.customer.name,
                     address = order.customer.address,
                     phoneNumber = order.customer.phoneNumber,
+                    type = order.customer.type,
+                    state = order.customer.state
                 ),
                 items = order.items.map { item ->
                     ItemDTO(
@@ -100,6 +102,8 @@ class OrderService(val customerRepository : CustomerRepository,
                     name = order.customer.name,
                     address = order.customer.address,
                     phoneNumber = order.customer.phoneNumber,
+                    type = order.customer.type,
+                    state = order.customer.state
                 ),
                 items = order.items.map { item ->
                     ItemDTO(

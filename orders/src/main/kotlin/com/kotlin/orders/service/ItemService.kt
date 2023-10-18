@@ -78,4 +78,10 @@ class ItemService(val itemRepository: ItemRepository){
 
     }
 
+    fun getItemsByIds(itemIds: List<Int>): List<ItemDTO> {
+        return itemRepository.findAllById(itemIds).map {
+            ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
+        }
+    }
+
 }

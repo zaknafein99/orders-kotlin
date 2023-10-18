@@ -10,4 +10,7 @@ data class Customer (
     val id: Int?,
     var name: String,
     var address: String,
-    var phoneNumber: String)
+    var phoneNumber: String,
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY)
+    val orders: MutableList<Order> = mutableListOf()
+)

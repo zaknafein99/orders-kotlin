@@ -57,4 +57,17 @@ class TruckService(val truckRepository: TruckRepository){
 
     }
 
+    fun getTruckById(truckId: Int): TruckDTO {
+
+            val existingTruck = truckRepository.findById(truckId)
+            return if(existingTruck.isPresent){
+                existingTruck.let {
+                    TruckDTO(it.get().id, it.get().name)
+                }
+            }else{
+                throw TruckNotFoundException("Truck not found with id: $truckId")
+            }
+
+    }
+
 }

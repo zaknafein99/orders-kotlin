@@ -12,4 +12,7 @@ data class Item(
     var description: String,
     var price: Double,
     var quantity: Int,
-    var category: String)
+    var category: String,
+    @ManyToMany(mappedBy = "items", fetch = FetchType.LAZY)
+    val itemOrders: List<Order> = mutableListOf()
+    )

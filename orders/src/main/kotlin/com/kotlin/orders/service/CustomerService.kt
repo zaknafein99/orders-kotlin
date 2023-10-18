@@ -84,5 +84,18 @@ class CustomerService(val customerRepository: CustomerRepository) {
             throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")
         }
     }
+
+    fun getCustomerById(customerId: Int): CustomerDTO {
+
+        val existingCustomer = customerRepository.findById(customerId)
+        return if (existingCustomer.isPresent) {
+            existingCustomer.let {
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber)
+            }
+        } else {
+            throw CustomerNotFoundException("Customer not found with id: $customerId")
+        }
+
+    }
 }
 

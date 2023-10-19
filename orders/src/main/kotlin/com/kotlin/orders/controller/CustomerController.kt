@@ -19,13 +19,13 @@ class CustomerController(val customerService : CustomerService) {
         return customerService.addCustomer(customerDTO)
     }
 
-    @PutMapping("/{course_id}")
+    @PutMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.OK)
-    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("course_id") courseId: Int) = customerService.updateCustomer(courseId, customerDTO)
+    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: Int) = customerService.updateCustomer(customerId, customerDTO)
 
-    @DeleteMapping("/{course_id}")
+    @DeleteMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCustomer(@PathVariable("course_id") courseId: Int) = customerService.deleteCustomer(courseId)
+    fun deleteCustomer(@PathVariable("course_id") customerId: Int) = customerService.deleteCustomer(customerId)
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)

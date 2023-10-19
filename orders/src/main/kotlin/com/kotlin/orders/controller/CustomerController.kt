@@ -29,7 +29,15 @@ class CustomerController(val customerService : CustomerService) {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getCustomers(): List<CustomerDTO> = customerService.getCustomers()
+    fun getCustomers(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "10") size: Int
+    ): List<CustomerDTO> {
+        val customers = customerService.getCustomers()
+        val startIndex = page * size
+        val endIndex = minOf(startIndex + size, customers.size)
+        return customers.subList(startIndex, endIndex)
+    }
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)

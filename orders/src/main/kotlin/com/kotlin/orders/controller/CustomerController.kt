@@ -1,17 +1,24 @@
 package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.CustomerDTO
+import com.kotlin.orders.entity.Customer
+import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.service.CustomerService
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import java.util.UUID
 
-@CrossOrigin(origins = ["http://localhost:3000"])
+
+@CrossOrigin
 @RestController
 @RequestMapping("/customer")
 @Validated
-class CustomerController(val customerService : CustomerService) {
+class CustomerController(val customerService : CustomerService, val customerRepository: CustomerRepository) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -21,23 +28,17 @@ class CustomerController(val customerService : CustomerService) {
 
     @PutMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.OK)
-    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: Int) = customerService.updateCustomer(customerId, customerDTO)
+    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: UUID) = customerService.updateCustomer(customerId, customerDTO)
 
     @DeleteMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCustomer(@PathVariable("course_id") customerId: Int) = customerService.deleteCustomer(customerId)
+    fun deleteCustomer(@PathVariable("course_id") customerId: UUID) = customerService.deleteCustomer(customerId)
 
-    @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    fun getCustomers(
-        @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "10") size: Int
-    ): List<CustomerDTO> {
-        val customers = customerService.getCustomers()
-        val startIndex = page * size
-        val endIndex = minOf(startIndex + size, customers.size)
-        return customers.subList(startIndex, endIndex)
+    @GetMapping("/list")
+    fun getCustomersPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<Customer>{
+        return customerRepository.findAll(pageable)
     }
+
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)

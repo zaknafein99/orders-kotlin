@@ -1,13 +1,14 @@
 package com.kotlin.orders.entity
 
 import jakarta.persistence.*
+import java.util.UUID
 
 @Entity
 @Table(name = "customers")
 data class Customer (
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    val id: Int?,
+    val uuid: UUID?,
     var name: String,
     var address: String,
     var phoneNumber: String,

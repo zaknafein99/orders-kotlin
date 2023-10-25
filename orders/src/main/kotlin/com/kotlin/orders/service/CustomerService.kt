@@ -6,6 +6,8 @@ import com.kotlin.orders.exceptionhandler.CustomerNotFoundException
 import com.kotlin.orders.repository.CustomerRepository
 import mu.KLogging
 import org.springframework.stereotype.Service
+import java.util.*
+
 
 @Service
 class CustomerService(val customerRepository: CustomerRepository) {
@@ -22,13 +24,13 @@ class CustomerService(val customerRepository: CustomerRepository) {
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.let {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
     }
 
     fun getCustomers(): List<CustomerDTO> {
         return customerRepository.findAll().map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
     }
 
@@ -41,35 +43,35 @@ class CustomerService(val customerRepository: CustomerRepository) {
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
 
     }
 
-    fun updateCustomer(courseId: Int, customerDTO: CustomerDTO): CustomerDTO {
+    fun updateCustomer(customerId: UUID, customerDTO: CustomerDTO): CustomerDTO {
 
-        val existingCustomer = customerRepository.findById(courseId)
+        val existingCustomer = customerRepository.findByUuid(customerId)
         return if (existingCustomer.isPresent) {
             existingCustomer.let {
                 it.get().name = customerDTO.name
                 it.get().address = customerDTO.address
                 it.get().phoneNumber = customerDTO.phoneNumber
                 customerRepository.save(it.get())
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                CustomerDTO(it.get().uuid, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
-            throw CustomerNotFoundException("Customer not found with id: $courseId")
+            throw CustomerNotFoundException("Customer not found with id: $customerId")
         }
     }
 
-    fun deleteCustomer(courseId: Int) {
-        val existingCustomer = customerRepository.findById(courseId)
+    fun deleteCustomer(customerId: UUID) {
+        val existingCustomer = customerRepository.findByUuid(customerId)
         if (existingCustomer.isPresent) {
             existingCustomer.let {
                 customerRepository.delete(it.get())
             }
         } else {
-            throw CustomerNotFoundException("Customer not found with id: $courseId")
+            throw CustomerNotFoundException("Customer not found with id: $customerId")
         }
     }
 
@@ -78,7 +80,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findByPhoneNumber(phoneNumber)
         return if (existingCustomer.isNotEmpty()) {
             existingCustomer.map {
-                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+                CustomerDTO(it!!.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")
@@ -90,7 +92,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findById(customerId)
         return if (existingCustomer.isPresent) {
             existingCustomer.let {
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                CustomerDTO(it.get().uuid, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")

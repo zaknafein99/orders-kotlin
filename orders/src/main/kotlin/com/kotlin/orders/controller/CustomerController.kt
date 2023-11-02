@@ -48,7 +48,8 @@ class CustomerController(val customerService : CustomerService, val customerRepo
 
     @GetMapping("/search_phone/{phone_number}")
     @ResponseStatus(HttpStatus.OK)
-    fun getCustomerByPhoneNumber(@PathVariable("phone_number") phoneNumber: String): List<CustomerDTO> {
-        return customerService.getCustomerByPhoneNumber(phoneNumber)
+    fun getCustomerByPhoneNumber(@PathVariable("phone_number") phoneNumber: String, pageable: Pageable): Page<CustomerDTO> {
+        val customers: Page<CustomerDTO> = customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
+        return customers
     }
 }

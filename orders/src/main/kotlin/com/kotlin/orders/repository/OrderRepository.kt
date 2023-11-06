@@ -5,4 +5,6 @@ import org.springframework.data.repository.CrudRepository
 
 interface OrderRepository : CrudRepository<Order, Int> {
 
+    fun findByCustomerPhoneNumber(phoneNumber: String): List<Order?>
+
 }

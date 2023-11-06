@@ -1,16 +1,21 @@
 package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.ItemDTO
+import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.service.ItemService
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
+@CrossOrigin
 @RestController
 @RequestMapping("/item")
 @Validated
-class ItemController(val itemService: ItemService) {
+class ItemController(val itemService: ItemService, val itemRepository: ItemRepository) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -29,6 +34,12 @@ class ItemController(val itemService: ItemService) {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getItems(): List<ItemDTO> = itemService.getItems()
+
+    @GetMapping("/list")
+    @ResponseStatus(HttpStatus.OK)
+    fun getItemsPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<ItemDTO>{
+        return itemService.findAll(pageable)
+    }
 
     @PostMapping("/list")
     @ResponseStatus(HttpStatus.CREATED)

@@ -22,7 +22,7 @@ class OrderService(val customerRepository : CustomerRepository,
 
     fun createOrder(orderDTO: OrderDTO): OrderDTO {
         val customer = orderDTO.customer.id?.let {
-            customerRepository.findByUuid(it)
+            customerRepository.findById(it)
                 .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customer}") }
         }
 
@@ -64,7 +64,7 @@ class OrderService(val customerRepository : CustomerRepository,
             OrderDTO(
                 id = order.id,
                 customer = CustomerDTO(
-                    id = order.customer.uuid,
+                    id = order.customer.id,
                     name = order.customer.name,
                     address = order.customer.address,
                     phoneNumber = order.customer.phoneNumber,
@@ -98,7 +98,7 @@ class OrderService(val customerRepository : CustomerRepository,
             OrderDTO(
                 id = order.id,
                 customer = CustomerDTO(
-                    id = order.customer.uuid,
+                    id = order.customer.id,
                     name = order.customer.name,
                     address = order.customer.address,
                     phoneNumber = order.customer.phoneNumber,

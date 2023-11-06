@@ -5,6 +5,8 @@ import com.kotlin.orders.entity.Item
 import com.kotlin.orders.exceptionhandler.ItemNotFoundException
 import com.kotlin.orders.repository.ItemRepository
 import mu.KLogging
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 
 @Service
@@ -82,6 +84,14 @@ class ItemService(val itemRepository: ItemRepository){
         return itemRepository.findAllById(itemIds).map {
             ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
         }
+    }
+
+    fun findAll(pageable: Pageable): Page<ItemDTO> {
+
+        return itemRepository.findAll(pageable).map {
+            ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
+        }
+
     }
 
 }

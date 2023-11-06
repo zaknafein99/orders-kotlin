@@ -11,7 +11,6 @@ import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
-import java.util.UUID
 
 
 @CrossOrigin
@@ -28,15 +27,15 @@ class CustomerController(val customerService : CustomerService, val customerRepo
 
     @PutMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.OK)
-    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: UUID) = customerService.updateCustomer(customerId, customerDTO)
+    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: Int) = customerService.updateCustomer(customerId, customerDTO)
 
     @DeleteMapping("/{customer_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCustomer(@PathVariable("course_id") customerId: UUID) = customerService.deleteCustomer(customerId)
+    fun deleteCustomer(@PathVariable("customer_id") customerId: Int) = customerService.deleteCustomer(customerId)
 
     @GetMapping("/list")
     fun getCustomersPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<Customer>{
-        return customerRepository.findAll(pageable)
+        return customerService.getCustomersPaged(pageable)
     }
 
 
@@ -48,10 +47,7 @@ class CustomerController(val customerService : CustomerService, val customerRepo
 
     @GetMapping("/search_phone/{phone_number}")
     @ResponseStatus(HttpStatus.OK)
-    fun getCustomerByPhoneNumber(
-        @PathVariable("phone_number") phoneNumber: String,
-        pageable: Pageable
-    ): Page<CustomerDTO> {
+    fun getCustomerByPhoneNumber(@PathVariable("phone_number") phoneNumber: String, pageable: Pageable): Page<CustomerDTO> {
         return customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
     }
 }

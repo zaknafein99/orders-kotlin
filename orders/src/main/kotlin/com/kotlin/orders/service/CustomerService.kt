@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import java.util.*
 
 
 @Service
@@ -27,13 +26,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.let {
-            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
-        }
-    }
-
-    fun getCustomers(): List<CustomerDTO> {
-        return customerRepository.findAll().map {
-            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
     }
 
@@ -46,29 +39,29 @@ class CustomerService(val customerRepository: CustomerRepository) {
         logger.info { "Customer added: $customerEntity" }
 
         return customerEntity.map {
-            CustomerDTO(it.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
         }
 
     }
 
-    fun updateCustomer(customerId: UUID, customerDTO: CustomerDTO): CustomerDTO {
+    fun updateCustomer(customerId: Int, customerDTO: CustomerDTO): CustomerDTO {
 
-        val existingCustomer = customerRepository.findByUuid(customerId)
+        val existingCustomer = customerRepository.findById(customerId)
         return if (existingCustomer.isPresent) {
             existingCustomer.let {
                 it.get().name = customerDTO.name
                 it.get().address = customerDTO.address
                 it.get().phoneNumber = customerDTO.phoneNumber
                 customerRepository.save(it.get())
-                CustomerDTO(it.get().uuid, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")
         }
     }
 
-    fun deleteCustomer(customerId: UUID) {
-        val existingCustomer = customerRepository.findByUuid(customerId)
+    fun deleteCustomer(customerId: Int) {
+        val existingCustomer = customerRepository.findById(customerId)
         if (existingCustomer.isPresent) {
             existingCustomer.let {
                 customerRepository.delete(it.get())
@@ -82,7 +75,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findByPhoneNumber(phoneNumber)
         val customerList = if (existingCustomer.isNotEmpty()) {
             existingCustomer.map {
-                CustomerDTO(it!!.uuid, it.name, it.address, it.phoneNumber, it.type, it.state)
+                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber, it.type, it.state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")
@@ -95,12 +88,15 @@ class CustomerService(val customerRepository: CustomerRepository) {
         val existingCustomer = customerRepository.findById(customerId)
         return if (existingCustomer.isPresent) {
             existingCustomer.let {
-                CustomerDTO(it.get().uuid, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")
         }
+    }
 
+    fun getCustomersPaged(pageable: Pageable): Page<Customer> {
+        return customerRepository.findAll(pageable)
     }
 }
 

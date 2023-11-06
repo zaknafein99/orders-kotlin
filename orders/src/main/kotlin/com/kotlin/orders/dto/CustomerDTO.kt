@@ -1,10 +1,9 @@
 package com.kotlin.orders.dto
 
 import jakarta.validation.constraints.NotBlank
-import java.util.*
 
 data class CustomerDTO(
-    val id: UUID?,
+    val id: Int?,
     @get:NotBlank(message = "El nombre no puede estar vacío")
     val name: String,
     @get:NotBlank(message = "La dirección no puede estar vacía")

@@ -20,20 +20,20 @@ class OrderService(val customerRepository : CustomerRepository,
                    val orderRepository : OrderRepository
 ) {
 
-    fun createOrder(orderDTO: OrderDTO): OrderDTO {
-        val customer = orderDTO.customer.id?.let {
+    fun createOrder(orderDTO: OrderDTO): Order {
+        val customer = orderDTO.customerId.let {
             customerRepository.findById(it)
-                .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customer}") }
+                .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customerId}") }
         }
 
-        val truck = orderDTO.truck.id?.let {
+        val truck = orderDTO.truckId.let {
             truckRepository.findById(it)
-                .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truck}") }
+                .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truckId}") }
         }
 
         val items = orderDTO.items.map {
-            itemRepository.findById(it.id!!)
-                .orElseThrow { EntityNotFoundException("Item not found with ID ${it.id}") }
+            itemRepository.findById(it).get().id?.let { it1 -> itemRepository.findById(it1).get() }
+                ?: throw EntityNotFoundException("Item not found with ID $it")
         }
 
         val orderEntity = Order(
@@ -47,78 +47,33 @@ class OrderService(val customerRepository : CustomerRepository,
 
         orderRepository.save(orderEntity)
 
-        return OrderDTO(
-            id = orderEntity.id,
-            customer = orderDTO.customer,
-            items = orderDTO.items,
-            truck = orderDTO.truck,
-            date = orderDTO.date,
-            totalPrice = orderDTO.totalPrice
-        )
+        return orderEntity
     }
 
-    fun getOrders(): List<OrderDTO> {
+    fun getOrders(): List<Order> {
         val orders = orderRepository.findAll()
         
         return orders.map { order ->
-            OrderDTO(
+            Order(
                 id = order.id,
-                customer = CustomerDTO(
-                    id = order.customer.id,
-                    name = order.customer.name,
-                    address = order.customer.address,
-                    phoneNumber = order.customer.phoneNumber,
-                    type = order.customer.type,
-                    state = order.customer.state
-                ),
-                items = order.items.map { item ->
-                    ItemDTO(
-                        id = item.id,
-                        name = item.name,
-                        quantity = item.quantity,
-                        price = item.price,
-                        category = item.category,
-                        description = item.description
-                    )
-                },
-                truck = TruckDTO(
-                    id = order.truck.id,
-                    name = order.truck.name
-                ),
+                customer = order.customer,
+                items = order.items,
+                truck = order.truck,
                 date = order.date,
                 totalPrice = order.totalPrice
             )
         }
     }
 
-    fun getOrdersByCustomer(phoneNumber: String): List<OrderDTO> {
+    fun getOrdersByCustomer(phoneNumber: String): List<Order> {
         val orders = orderRepository.findAll()
     
         return orders.filter { it.customer.phoneNumber == phoneNumber }.map { order ->
-            OrderDTO(
+            Order(
                 id = order.id,
-                customer = CustomerDTO(
-                    id = order.customer.id,
-                    name = order.customer.name,
-                    address = order.customer.address,
-                    phoneNumber = order.customer.phoneNumber,
-                    type = order.customer.type,
-                    state = order.customer.state
-                ),
-                items = order.items.map { item ->
-                    ItemDTO(
-                        id = item.id,
-                        name = item.name,
-                        quantity = item.quantity,
-                        price = item.price,
-                        category = item.category,
-                        description = item.description
-                    )
-                },
-                truck = TruckDTO(
-                    id = order.truck.id,
-                    name = order.truck.name
-                ),
+                customer = order.customer,
+                items = order.items,
+                truck = order.truck,
                 date = order.date,
                 totalPrice = order.totalPrice
             )

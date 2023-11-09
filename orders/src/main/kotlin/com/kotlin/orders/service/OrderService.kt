@@ -1,23 +1,23 @@
 package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.OrderDTO
-import com.kotlin.orders.dto.ItemDTO
-import com.kotlin.orders.dto.TruckDTO
-import com.kotlin.orders.dto.CustomerDTO
 import com.kotlin.orders.entity.Order
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.repository.OrderRepository
 import com.kotlin.orders.repository.TruckRepository
 import jakarta.persistence.EntityNotFoundException
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class OrderService(val customerRepository : CustomerRepository,
-                   val truckRepository : TruckRepository,
-                   val itemRepository : ItemRepository,
-                   val orderRepository : OrderRepository
+                                   val truckRepository : TruckRepository,
+                                   val itemRepository : ItemRepository,
+                                   val orderRepository : OrderRepository
 ) {
 
     fun createOrder(orderDTO: OrderDTO): Order {
@@ -65,6 +65,21 @@ class OrderService(val customerRepository : CustomerRepository,
         }
     }
 
+    fun getOrdersPaged(): Page<Order> {
+        val orders = orderRepository.findAll()
+
+        return PageImpl(orders.map { order ->
+            Order(
+                id = order.id,
+                customer = order.customer,
+                items = order.items,
+                truck = order.truck,
+                date = order.date,
+                totalPrice = order.totalPrice
+            )
+        })
+    }
+
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {
         val orders = orderRepository.findAll()
     
@@ -80,6 +95,20 @@ class OrderService(val customerRepository : CustomerRepository,
         }
     }
 
-
+    fun getOrdersByCustomerPaged(pageable: Pageable, phoneNumber: String): Page<Order> {
+        val orders = orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable)
+        return orders.map { order ->
+            order?.let {
+                Order(
+                    id = order.id,
+                    customer = it.customer,
+                    items = order.items,
+                    truck = order.truck,
+                    date = order.date,
+                    totalPrice = order.totalPrice
+                )
+            }
+        }
+    }
 }
 

@@ -3,7 +3,7 @@ package com.kotlin.orders.entity
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import jakarta.persistence.*
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Entity
 @Table(name = "orders")
@@ -29,7 +29,7 @@ data class Order(
     @JoinColumn(name = "truck_id")
     val truck: Truck,
 
-    val date: LocalDateTime,
+    val date: LocalDate,
 
     val totalPrice: Double
 )

@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Service
 class OrderService(val customerRepository : CustomerRepository,
@@ -41,7 +41,7 @@ class OrderService(val customerRepository : CustomerRepository,
             customer = customer!!,
             items = items,
             truck = truck!!,
-            date = LocalDateTime.now(),
+            date = LocalDate.now(),
             totalPrice = items.sumOf { it.price * it.quantity }
         )
 
@@ -109,6 +109,11 @@ class OrderService(val customerRepository : CustomerRepository,
                 )
             }
         }
+    }
+
+    fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate): List<Order> {
+        val nextDay = deliveryDate.plusDays(1)
+        return orderRepository.findByTruckIdAndDate(truckId, deliveryDate, nextDay)
     }
 }
 

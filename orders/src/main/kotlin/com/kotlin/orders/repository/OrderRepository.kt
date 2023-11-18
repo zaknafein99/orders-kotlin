@@ -12,10 +12,8 @@ interface OrderRepository : CrudRepository<Order, Int> {
 
     fun findByCustomerPhoneNumber(phoneNumber: String, pageable: Pageable): Page<Order?>
 
-    @Query("SELECT o FROM Order o WHERE o.truck.id = :truckId AND o.date >= :deliveryDate AND o.date < :nextDay")
-    fun findByTruckIdAndDate(
-        @Param("truckId") truckId: Int,
-        @Param("deliveryDate") deliveryDate: LocalDate,
-        @Param("nextDay") nextDay: LocalDate
-    ): List<Order>
+    @Query("SELECT o FROM Order o WHERE o.truck.id = :truckId AND o.date >= :startOfDay AND o.date < :endOfDay")
+    fun findByTruckIdAndDate(@Param("truckId") truckId: Int,
+                             @Param("startOfDay") startOfDay: LocalDate,
+                             @Param("endOfDay") endOfDay: LocalDate, pageable: Pageable): Page<Order>
 }

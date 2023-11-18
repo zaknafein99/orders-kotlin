@@ -50,22 +50,7 @@ class OrderService(val customerRepository : CustomerRepository,
         return orderEntity
     }
 
-    fun getOrders(): List<Order> {
-        val orders = orderRepository.findAll()
-        
-        return orders.map { order ->
-            Order(
-                id = order.id,
-                customer = order.customer,
-                items = order.items,
-                truck = order.truck,
-                date = order.date,
-                totalPrice = order.totalPrice
-            )
-        }
-    }
-
-    fun getOrdersPaged(): Page<Order> {
+    fun getOrders(): Page<Order> {
         val orders = orderRepository.findAll()
 
         return PageImpl(orders.map { order ->
@@ -111,9 +96,14 @@ class OrderService(val customerRepository : CustomerRepository,
         }
     }
 
-    fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate): List<Order> {
-        val nextDay = deliveryDate.plusDays(1)
-        return orderRepository.findByTruckIdAndDate(truckId, deliveryDate, nextDay)
+    fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Page<Order> {
+        val endOfDay = deliveryDate.plusDays(1)
+        return orderRepository.findByTruckIdAndDate(truckId, deliveryDate, endOfDay, pageable)
+    }
+
+    fun getTotalPriceByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Double {
+        val orders = getOrdersByTruckIdAndDate(truckId, deliveryDate, pageable)
+        return orders.content.sumOf { it.totalPrice }
     }
 }
 

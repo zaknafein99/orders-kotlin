@@ -18,21 +18,19 @@ class OrderController(val orderService: OrderService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createOrder(@RequestBody orderDTO: OrderDTO): ResponseEntity<Order> {
-
-        return ResponseEntity.ok(orderService.createOrder(orderDTO))
-    }
+    fun createOrder(@RequestBody orderDTO: OrderDTO): ResponseEntity<Order> =
+        ResponseEntity.ok(orderService.createOrder(orderDTO))
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<Order> = orderService.getOrdersPaged()
+    fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<Order> =
+        orderService.getOrders()
 
     @GetMapping("/customer")
     @ResponseStatus(HttpStatus.OK)
-    fun getOrdersByCustomer(
-        @PageableDefault(page = 0, size = 10) pageable: Pageable,
-        @RequestParam phoneNumber: String
-    ): Page<Order> = orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
+    fun getOrdersByCustomer(@PageableDefault(page = 0, size = 10) pageable: Pageable,
+                            @RequestParam phoneNumber: String): Page<Order> =
+        orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
 
     @GetMapping("/{customer_phone_number}")
     @ResponseStatus(HttpStatus.OK)
@@ -40,10 +38,12 @@ class OrderController(val orderService: OrderService) {
         orderService.getOrdersByCustomer(customerPhoneNumber)
 
     @GetMapping("/truck/{truckId}")
-    fun getOrdersByTruckIdAndDate(
-        @PathVariable truckId: Int,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) deliveryDate: LocalDate): ResponseEntity<List<Order>> {
-        val orders = orderService.getOrdersByTruckIdAndDate(truckId, deliveryDate)
-        return ResponseEntity(orders, HttpStatus.OK)
+    fun getOrdersByTruckIdAndDate(@PageableDefault(page = 0, size = 10) pageable: Pageable,
+                                  @PathVariable truckId: Int,
+                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) deliveryDate: LocalDate): ResponseEntity<Map<String, Any>> {
+        val orders = orderService.getOrdersByTruckIdAndDate(truckId, deliveryDate, pageable)
+        val dayTotalPrice = orderService.getTotalPriceByTruckIdAndDate(truckId, deliveryDate, pageable)
+        val response = mapOf("orders" to orders, "dayTotalPrice" to dayTotalPrice)
+        return ResponseEntity.ok().body(response)
     }
 }

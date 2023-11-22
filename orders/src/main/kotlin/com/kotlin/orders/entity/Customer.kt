@@ -16,7 +16,7 @@ data class Customer (
     var phoneNumber: String,
     var type: String,
     var state: String,
-//    @OneToMany(mappedBy = "customer")
-//    var orders: List<Order>
+    @OneToMany(mappedBy = "customer", cascade = [CascadeType.REMOVE])
+    var orders: List<Order>
 
 )

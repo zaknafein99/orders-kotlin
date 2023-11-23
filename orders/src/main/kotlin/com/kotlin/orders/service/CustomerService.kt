@@ -19,7 +19,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerDTO.let {
-            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state)
+            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state, emptyList())
         }
         customerRepository.save(customerEntity)
 
@@ -33,7 +33,7 @@ class CustomerService(val customerRepository: CustomerRepository) {
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
         val customerEntity = customerDTO.map {
-            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state)
+            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state, emptyList())
         }
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }

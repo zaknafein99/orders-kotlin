@@ -11,7 +11,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Service
 class OrderService(val customerRepository : CustomerRepository,
@@ -41,7 +41,7 @@ class OrderService(val customerRepository : CustomerRepository,
             customer = customer!!,
             items = items,
             truck = truck!!,
-            date = LocalDateTime.now(),
+            date = LocalDate.now(),
             totalPrice = items.sumOf { it.price * it.quantity }
         )
 
@@ -50,22 +50,7 @@ class OrderService(val customerRepository : CustomerRepository,
         return orderEntity
     }
 
-    fun getOrders(): List<Order> {
-        val orders = orderRepository.findAll()
-        
-        return orders.map { order ->
-            Order(
-                id = order.id,
-                customer = order.customer,
-                items = order.items,
-                truck = order.truck,
-                date = order.date,
-                totalPrice = order.totalPrice
-            )
-        }
-    }
-
-    fun getOrdersPaged(): Page<Order> {
+    fun getOrders(): Page<Order> {
         val orders = orderRepository.findAll()
 
         return PageImpl(orders.map { order ->
@@ -109,6 +94,16 @@ class OrderService(val customerRepository : CustomerRepository,
                 )
             }
         }
+    }
+
+    fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Page<Order> {
+        val endOfDay = deliveryDate.plusDays(1)
+        return orderRepository.findByTruckIdAndDate(truckId, deliveryDate, endOfDay, pageable)
+    }
+
+    fun getTotalPriceByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Double {
+        val orders = getOrdersByTruckIdAndDate(truckId, deliveryDate, pageable)
+        return orders.content.sumOf { it.totalPrice }
     }
 }
 

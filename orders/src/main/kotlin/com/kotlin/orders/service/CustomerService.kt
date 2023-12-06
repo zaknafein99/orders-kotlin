@@ -95,8 +95,10 @@ class CustomerService(val customerRepository: CustomerRepository) {
         }
     }
 
-    fun getCustomersPaged(pageable: Pageable): Page<Customer> {
-        return customerRepository.findAll(pageable)
+    fun getCustomersPaged(pageable: Pageable): Page<CustomerDTO> {
+        return customerRepository.findAll(pageable).map {
+            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+        }
     }
 }
 

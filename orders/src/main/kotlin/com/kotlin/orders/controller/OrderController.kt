@@ -23,13 +23,13 @@ class OrderController(val orderService: OrderService) {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<Order> =
-        orderService.getOrders()
+    fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<OrderDTO> =
+        orderService.getOrders(pageable)
 
     @GetMapping("/customer")
     @ResponseStatus(HttpStatus.OK)
     fun getOrdersByCustomer(@PageableDefault(page = 0, size = 10) pageable: Pageable,
-                            @RequestParam phoneNumber: String): Page<Order> =
+                            @RequestParam phoneNumber: String): Page<OrderDTO> =
         orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
 
     @GetMapping("/{customer_phone_number}")

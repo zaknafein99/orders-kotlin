@@ -10,10 +10,16 @@ import java.time.LocalDate
 
 interface OrderRepository : CrudRepository<Order, Int> {
 
-    fun findByCustomerPhoneNumber(phoneNumber: String, pageable: Pageable): Page<Order?>
+    fun findByCustomerPhoneNumber(phoneNumber: String): List<Order>
+
+    fun findByCustomerPhoneNumber(phoneNumber: String, pageable: Pageable): Page<Order>
 
     @Query("SELECT o FROM Order o WHERE o.truck.id = :truckId AND o.date >= :startOfDay AND o.date < :endOfDay")
     fun findByTruckIdAndDate(@Param("truckId") truckId: Int,
                              @Param("startOfDay") startOfDay: LocalDate,
                              @Param("endOfDay") endOfDay: LocalDate, pageable: Pageable): Page<Order>
+
+    fun findAll(pageable: Pageable): Page<Order>
+
+
 }

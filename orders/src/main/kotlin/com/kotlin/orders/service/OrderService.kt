@@ -2,98 +2,56 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
+import com.kotlin.orders.mapper.OrderMapperImpl
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.repository.OrderRepository
 import com.kotlin.orders.repository.TruckRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 @Service
-class OrderService(val customerRepository : CustomerRepository,
-                                   val truckRepository : TruckRepository,
-                                   val itemRepository : ItemRepository,
-                                   val orderRepository : OrderRepository
+class OrderService(
+    private val customerRepository : CustomerRepository,
+    private val truckRepository : TruckRepository,
+    private val itemRepository : ItemRepository,
+    private val orderRepository : OrderRepository,
+    private val orderMapperImpl : OrderMapperImpl
+
 ) {
 
     fun createOrder(orderDTO: OrderDTO): Order {
-        val customer = orderDTO.customerId.let {
-            customerRepository.findById(it)
-                .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customerId}") }
-        }
+        val customer = customerRepository.findById(orderDTO.customer.id!!)
+            .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customer.id}") }
 
-        val truck = orderDTO.truckId.let {
-            truckRepository.findById(it)
-                .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truckId}") }
-        }
-
-        val items = orderDTO.items.map {
-            itemRepository.findById(it).get().id?.let { it1 -> itemRepository.findById(it1).get() }
-                ?: throw EntityNotFoundException("Item not found with ID $it")
-        }
+        val truck = truckRepository.findById(orderDTO.truckId)
+            .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truckId}") }
 
         val orderEntity = Order(
             id = null,
-            customer = customer!!,
-            items = items,
-            truck = truck!!,
+            customer = customer,
+            items = orderDTO.items.map { itemRepository.findById(it).get() },
+            truck = truck,
             date = LocalDate.now(),
-            totalPrice = items.sumOf { it.price * it.quantity }
+            totalPrice = orderDTO.items.map { itemRepository.findById(it).get().price }.sum()
         )
 
-        orderRepository.save(orderEntity)
-
-        return orderEntity
+        return orderRepository.save(orderEntity)
     }
 
-    fun getOrders(): Page<Order> {
-        val orders = orderRepository.findAll()
-
-        return PageImpl(orders.map { order ->
-            Order(
-                id = order.id,
-                customer = order.customer,
-                items = order.items,
-                truck = order.truck,
-                date = order.date,
-                totalPrice = order.totalPrice
-            )
-        })
+    fun getOrders(pageable: Pageable): Page<OrderDTO> {
+        return orderRepository.findAll(pageable).map { orderMapperImpl.toDto(it) }
     }
 
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {
-        val orders = orderRepository.findAll()
-    
-        return orders.filter { it.customer.phoneNumber == phoneNumber }.map { order ->
-            Order(
-                id = order.id,
-                customer = order.customer,
-                items = order.items,
-                truck = order.truck,
-                date = order.date,
-                totalPrice = order.totalPrice
-            )
-        }
+        return orderRepository.findByCustomerPhoneNumber(phoneNumber)
     }
 
-    fun getOrdersByCustomerPaged(pageable: Pageable, phoneNumber: String): Page<Order> {
-        val orders = orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable)
-        return orders.map { order ->
-            order?.let {
-                Order(
-                    id = order.id,
-                    customer = it.customer,
-                    items = order.items,
-                    truck = order.truck,
-                    date = order.date,
-                    totalPrice = order.totalPrice
-                )
-            }
-        }
+    fun getOrdersByCustomerPaged(pageable: Pageable, phoneNumber: String): Page<OrderDTO> {
+        return orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable).map { orderMapperImpl.toDto(it) }
     }
 
     fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Page<Order> {
@@ -102,8 +60,6 @@ class OrderService(val customerRepository : CustomerRepository,
     }
 
     fun getTotalPriceByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Double {
-        val orders = getOrdersByTruckIdAndDate(truckId, deliveryDate, pageable)
-        return orders.content.sumOf { it.totalPrice }
+        return getOrdersByTruckIdAndDate(truckId, deliveryDate, pageable).content.sumOf { it.totalPrice }
     }
 }
-

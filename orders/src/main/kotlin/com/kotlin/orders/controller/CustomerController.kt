@@ -1,7 +1,6 @@
 package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.CustomerDTO
-import com.kotlin.orders.entity.Customer
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.service.CustomerService
 import jakarta.validation.Valid
@@ -34,7 +33,7 @@ class CustomerController(val customerService : CustomerService, val customerRepo
     fun deleteCustomer(@PathVariable("customer_id") customerId: Int) = customerService.deleteCustomer(customerId)
 
     @GetMapping("/list")
-    fun getCustomersPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<Customer>{
+    fun getCustomersPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<CustomerDTO> {
         return customerService.getCustomersPaged(pageable)
     }
 

@@ -1,20 +1,23 @@
 package com.kotlin.orders.entity
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import jakarta.persistence.*
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 @Entity
 @Table(name = "orders")
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator::class, property = "id")
 data class Order(
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     val id: Int? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
     val customer: Customer,
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "order_items",
         joinColumns = [JoinColumn(name = "order_id")],
@@ -26,7 +29,7 @@ data class Order(
     @JoinColumn(name = "truck_id")
     val truck: Truck,
 
-    val date: LocalDateTime,
+    val date: LocalDate,
 
     val totalPrice: Double
 )

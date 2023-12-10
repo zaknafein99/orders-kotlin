@@ -18,7 +18,7 @@ class OrderController(val orderService: OrderService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createOrder(@RequestBody orderDTO: OrderDTO): ResponseEntity<Order> =
+    fun createOrder(@RequestBody orderDTO: OrderDTO): ResponseEntity<OrderDTO> =
         ResponseEntity.ok(orderService.createOrder(orderDTO))
 
     @GetMapping

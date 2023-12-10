@@ -3,6 +3,7 @@ package com.kotlin.orders.controller
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
 import com.kotlin.orders.service.OrderService
+import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -18,7 +19,7 @@ class OrderController(val orderService: OrderService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createOrder(@RequestBody orderDTO: OrderDTO): ResponseEntity<OrderDTO> =
+    fun createOrder(@RequestBody @Valid orderDTO: OrderDTO): ResponseEntity<OrderDTO> =
         ResponseEntity.ok(orderService.createOrder(orderDTO))
 
     @GetMapping

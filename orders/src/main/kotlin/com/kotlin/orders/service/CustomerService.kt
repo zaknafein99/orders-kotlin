@@ -1,7 +1,6 @@
 package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.CustomerDTO
-import com.kotlin.orders.entity.Customer
 import com.kotlin.orders.exceptionhandler.CustomerNotFoundException
 import com.kotlin.orders.mapper.CustomerMapper
 import com.kotlin.orders.repository.CustomerRepository
@@ -18,26 +17,19 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     companion object : KLogging()
 
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
-
         val customerEntity = customerMapper.customerDTOToCustomer(customerDTO)
         customerRepository.save(customerEntity)
-
         logger.info { "Customer added: $customerEntity" }
-
         return customerMapper.customerToCustomerDTO(customerEntity)
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
-        val customerEntity = customerDTO.map {
-            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state, emptyList())
-        }
+        val customerEntity = customerMapper.customerDTOListToCustomerList(customerDTO)
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }
 
-        return customerEntity.map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
-        }
+        return customerMapper.customerListToCustomerDTOList(customerEntity)
 
     }
 
@@ -50,7 +42,7 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
                 it.get().address = customerDTO.address
                 it.get().phoneNumber = customerDTO.phoneNumber
                 customerRepository.save(it.get())
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                customerMapper.customerToCustomerDTO(it.get())
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")

@@ -1,7 +1,6 @@
 package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.OrderDTO
-import com.kotlin.orders.entity.Order
 import com.kotlin.orders.service.OrderService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -33,10 +32,10 @@ class OrderController(val orderService: OrderService) {
                             @RequestParam phoneNumber: String): Page<OrderDTO> =
         orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
 
-    @GetMapping("/{customer_phone_number}")
+    @GetMapping("/customer/orders")
     @ResponseStatus(HttpStatus.OK)
-    fun getOrdersByCustomerPaged(@PathVariable("customer_phone_number") customerPhoneNumber: String): List<Order> =
-        orderService.getOrdersByCustomer(customerPhoneNumber)
+    fun getOrdersByCustomerPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable, @RequestParam phoneNumber: String): Page<OrderDTO> =
+        orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
 
     @GetMapping("/truck/{truckId}")
     fun getOrdersByTruckIdAndDate(@PageableDefault(page = 0, size = 10) pageable: Pageable,

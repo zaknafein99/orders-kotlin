@@ -10,7 +10,7 @@ import jakarta.persistence.*
 data class Customer (
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    var id: Int?,
+    val id: Int?,
     var name: String,
     var address: String,
     var phoneNumber: String,

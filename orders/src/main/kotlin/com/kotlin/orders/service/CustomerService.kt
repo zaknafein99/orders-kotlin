@@ -1,7 +1,6 @@
 package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.CustomerDTO
-import com.kotlin.orders.entity.Customer
 import com.kotlin.orders.exceptionhandler.CustomerNotFoundException
 import com.kotlin.orders.mapper.CustomerMapper
 import com.kotlin.orders.repository.CustomerRepository
@@ -29,17 +28,12 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
-        val customerEntity = customerDTO.map {
-            Customer(null, it.name, it.address, it.phoneNumber, it.type, it.state, emptyList())
-        }
+        val customerEntity = customerMapper.customerDTOListToCustomerList(customerDTO)
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }
 
-        return customerEntity.map {
-            CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+        return customerMapper.customerListToCustomerDTOList(customerEntity)
         }
-
-    }
 
     fun updateCustomer(customerId: Int, customerDTO: CustomerDTO): CustomerDTO {
 

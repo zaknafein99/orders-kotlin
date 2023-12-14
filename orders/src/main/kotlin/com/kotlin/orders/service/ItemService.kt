@@ -94,4 +94,10 @@ class ItemService(val itemRepository: ItemRepository){
 
     }
 
+    fun findById(id: Int): Item? {
+
+        return itemRepository.findById(id).orElseThrow { ItemNotFoundException("Item not found with id $id") }
+
+    }
+
 }

@@ -19,21 +19,25 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerMapper.customerDTOToCustomer(customerDTO)
+       
         customerRepository.save(customerEntity)
 
         logger.info { "Customer added: $customerEntity" }
 
         return customerMapper.customerToCustomerDTO(customerEntity)
+
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
         val customerEntity = customerMapper.customerDTOListToCustomerList(customerDTO)
+
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }
 
         return customerMapper.customerListToCustomerDTOList(customerEntity)
         }
+
 
     fun updateCustomer(customerId: Int, customerDTO: CustomerDTO): CustomerDTO {
 
@@ -66,6 +70,14 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
         val existingCustomer = customerRepository.findByPhoneNumber(phoneNumber)
         val existingCustomersDto = customerMapper.customerListToCustomerDTOList(existingCustomer)
         return PageImpl(existingCustomersDto, pageable, existingCustomersDto.size.toLong())
+        val customerList = if (existingCustomer.isNotEmpty()) {
+            existingCustomer.map {
+                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+            }
+        } else {
+            throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")
+        }
+        return PageImpl(customerList, pageable, customerList.size.toLong())
     }
 
     fun getCustomerById(customerId: Int): CustomerDTO {
@@ -81,6 +93,7 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
 
     fun getCustomersPaged(pageable: Pageable): Page<CustomerDTO> {
         return customerRepository.findAll(pageable).map { customerMapper.customerToCustomerDTO(it) }
+
     }
 }
 

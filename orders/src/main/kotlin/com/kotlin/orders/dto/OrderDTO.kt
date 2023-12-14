@@ -4,7 +4,7 @@ import com.kotlin.orders.entity.Item
 import com.kotlin.orders.entity.Truck
 import jakarta.annotation.Nullable
 import jakarta.validation.constraints.NotNull
-import java.time.LocalDate
+import jakarta.validation.constraints.NotBlank
 
 data class OrderDTO(
     val id: Int?,
@@ -14,6 +14,10 @@ data class OrderDTO(
     val items: List<Item>,
     val truck: Truck,
     val date: LocalDate?,
+    @get:NotBlank(message = "Debe haber al menos un producto")
+    val items: List<Int>,
+    val truckId: Int,
+    val date: LocalDate,
     @Nullable
     val totalPrice: Double
 )

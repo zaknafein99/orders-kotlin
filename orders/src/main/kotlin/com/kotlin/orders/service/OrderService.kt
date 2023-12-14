@@ -3,6 +3,7 @@ package com.kotlin.orders.service
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
 import com.kotlin.orders.mapper.OrderMapper
+
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.repository.OrderRepository
@@ -30,6 +31,7 @@ class OrderService(
         val truck = truckRepository.findById(orderDTO.truck.id!!)
             .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truck.id}") }
 
+
         val orderEntity = Order(
             id = null,
             customer = customer,
@@ -44,6 +46,7 @@ class OrderService(
 
     fun getOrders(pageable: Pageable): Page<OrderDTO> {
         return orderRepository.findAll(pageable).map { orderMapper.toDto(it) }
+
     }
 
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {
@@ -52,6 +55,7 @@ class OrderService(
 
     fun getOrdersByCustomerPaged(pageable: Pageable, phoneNumber: String): Page<OrderDTO> {
         return orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable).map { orderMapper.toDto(it) }
+
     }
 
     fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Page<Order> {

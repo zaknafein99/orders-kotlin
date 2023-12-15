@@ -68,11 +68,9 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
 
     fun getCustomerByPhoneNumber(phoneNumber: String, pageable: Pageable): Page<CustomerDTO> {
         val existingCustomer = customerRepository.findByPhoneNumber(phoneNumber)
-        val existingCustomersDto = customerMapper.customerListToCustomerDTOList(existingCustomer)
-        return PageImpl(existingCustomersDto, pageable, existingCustomersDto.size.toLong())
         val customerList = if (existingCustomer.isNotEmpty()) {
             existingCustomer.map {
-                CustomerDTO(it!!.id, it.name, it.address, it.phoneNumber, it.type, it.state)
+                CustomerDTO(it.id, it.name, it.address, it.phoneNumber, it.type, it.state)
             }
         } else {
             throw CustomerNotFoundException("Customer not found with phone number: $phoneNumber")

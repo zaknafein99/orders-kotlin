@@ -3,7 +3,9 @@ package com.kotlin.orders.dto
 import com.kotlin.orders.entity.Item
 import com.kotlin.orders.entity.Truck
 import jakarta.annotation.Nullable
+
 import jakarta.validation.constraints.NotNull
+
 import java.time.LocalDate
 
 data class OrderDTO(

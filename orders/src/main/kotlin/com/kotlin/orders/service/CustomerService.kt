@@ -19,16 +19,19 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerMapper.customerDTOToCustomer(customerDTO)
+
         customerRepository.save(customerEntity)
 
         logger.info { "Customer added: $customerEntity" }
 
         return customerMapper.customerToCustomerDTO(customerEntity)
+
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
         val customerEntity = customerMapper.customerDTOListToCustomerList(customerDTO)
+
         customerRepository.saveAll(customerEntity)
         logger.info { "Customer added: $customerEntity" }
 

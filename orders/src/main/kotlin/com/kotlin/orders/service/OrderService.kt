@@ -2,7 +2,9 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
-import com.kotlin.orders.mapper.OrderMapperImpl
+
+import com.kotlin.orders.mapper.OrderMapper
+
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.repository.OrderRepository
@@ -19,31 +21,31 @@ class OrderService(
     private val truckRepository : TruckRepository,
     private val itemRepository : ItemRepository,
     private val orderRepository : OrderRepository,
-    private val orderMapperImpl : OrderMapperImpl
+    private val orderMapper : OrderMapper
 
 ) {
 
-    fun createOrder(orderDTO: OrderDTO): Order {
+    fun createOrder(orderDTO: OrderDTO): OrderDTO {
         val customer = customerRepository.findById(orderDTO.customer.id!!)
             .orElseThrow { EntityNotFoundException("Customer not found with ID ${orderDTO.customer.id}") }
 
-        val truck = truckRepository.findById(orderDTO.truckId)
-            .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truckId}") }
+        val truck = truckRepository.findById(orderDTO.truck.id!!)
+            .orElseThrow { EntityNotFoundException("Truck not found with ID ${orderDTO.truck.id}") }
 
         val orderEntity = Order(
             id = null,
             customer = customer,
-            items = orderDTO.items.map { itemRepository.findById(it).get() },
+            items = orderDTO.items.map { itemRepository.findById(it.id!!).get() },
             truck = truck,
             date = LocalDate.now(),
-            totalPrice = orderDTO.items.map { itemRepository.findById(it).get().price }.sum()
+            totalPrice = orderDTO.items.sumOf { it.price * it.quantity }
         )
 
-        return orderRepository.save(orderEntity)
+        return orderMapper.toDto(orderRepository.save(orderEntity))
     }
 
     fun getOrders(pageable: Pageable): Page<OrderDTO> {
-        return orderRepository.findAll(pageable).map { orderMapperImpl.toDto(it) }
+        return orderRepository.findAll(pageable).map { orderMapper.toDto(it) }
     }
 
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {
@@ -51,7 +53,7 @@ class OrderService(
     }
 
     fun getOrdersByCustomerPaged(pageable: Pageable, phoneNumber: String): Page<OrderDTO> {
-        return orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable).map { orderMapperImpl.toDto(it) }
+        return orderRepository.findByCustomerPhoneNumber(phoneNumber, pageable).map { orderMapper.toDto(it) }
     }
 
     fun getOrdersByTruckIdAndDate(truckId: Int, deliveryDate: LocalDate, pageable: Pageable): Page<Order> {

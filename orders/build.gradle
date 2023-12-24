@@ -28,15 +28,20 @@ dependencies {
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.2.0'
 	implementation 'org.apache.httpcomponents:httpclient:4.5.14'
-	implementation "org.springframework.boot:spring-boot-starter-security"
 	implementation 'org.projectlombok:lombok:1.18.20'
 
 	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
 	kapt 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 
+	implementation "org.springframework.boot:spring-boot-starter-security"
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
 	//runtimeOnly 'com.h2database:h2'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
 
 	//logging
 	implementation 'io.github.microutils:kotlin-logging-jvm:2.0.11'

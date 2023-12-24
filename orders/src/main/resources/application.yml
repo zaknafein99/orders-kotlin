@@ -6,9 +6,9 @@ spring:
 #    driver-class-name: org.h2.Driver
 #    username: sa
 #    password: password
-  # connect to database orders in PostgresSQL with password root
+# connect to database orders in PostgresSQL with password root
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/orders
+    url: jdbc:postgresql://192.168.1.7:5432/orders
     username: postgres
     password: root
   jpa:
@@ -22,6 +22,11 @@ spring:
     console:
       enabled: true
 message: "Hello from default profile"
+
+jwt:
+  key: ${JWT_KEY}
+  access-token-expiration: 3600000
+  refresh-token-expiration: 86400000
 
 ---
 spring:

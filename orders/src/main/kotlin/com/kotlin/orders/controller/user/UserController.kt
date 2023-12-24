@@ -3,11 +3,8 @@ package com.kotlin.orders.controller.user
 import com.kotlin.orders.entity.User
 import com.kotlin.orders.service.UserService
 import org.springframework.http.HttpStatus
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import java.util.*
 
@@ -21,6 +18,28 @@ class UserController(private val userService: UserService) {
                     user = userRequest.toModel()
             )?.toResponse()
              ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "User already exists")
+
+    @GetMapping
+    fun listAll(): List<UserResponse> =
+            userService.findAll()
+                    .map { it.toResponse() }
+
+    @GetMapping("/{uuid}")
+    fun findByUuid(@PathVariable uuid: UUID): UserResponse =
+            userService.findByUUID(uuid)
+                    ?.toResponse()
+             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+
+    @DeleteMapping("/{uuid}")
+    fun deleteByUuid(@PathVariable uuid: UUID) : ResponseEntity<Boolean> {
+        val success = userService.deleteById(uuid)
+
+        return if (success) {
+            ResponseEntity.noContent().build()
+        } else {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "User not found")
+        }
+    }
 
     private fun UserRequest.toModel() : User =
             User(

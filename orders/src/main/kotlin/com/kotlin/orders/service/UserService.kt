@@ -3,6 +3,7 @@ package com.kotlin.orders.service
 import com.kotlin.orders.entity.User
 import com.kotlin.orders.repository.UserRepository
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class UserService(
@@ -12,13 +13,13 @@ class UserService(
     fun findByEmail(email: String) =
             userRepository.findByEmail(email)
 
-    fun findById(id: Long) =
-            userRepository.findById(id)
+    fun findByUUID(id: UUID) =
+            userRepository.findByUUID(id)
 
     fun findAll() =
             userRepository.findAll()
 
-    fun deleteById(id: Long) =
+    fun deleteById(id: UUID) =
             userRepository.deleteById(id)
 
     fun create(user: User): User? {

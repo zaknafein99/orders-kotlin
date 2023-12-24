@@ -2,36 +2,38 @@ package com.kotlin.orders.repository
 
 import com.kotlin.orders.entity.User
 import com.kotlin.orders.entity.Role
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-class UserRepository {
+class UserRepository(private val encoder: PasswordEncoder) {
 
     private val users = mutableListOf(
             User(
                     id = UUID.randomUUID(),
                     email = "user1@example.com",
-                    password = "password1",
+                    password = encoder.encode("password1"),
                     role = Role.USER.toString()
             ),
             User(
                     id = UUID.randomUUID(),
                     email = "user2@example.com",
-                    password = "password2",
+                    password = encoder.encode("password2"),
                     role = Role.USER.toString()
             ),
             User(
                     id = UUID.randomUUID(),
                     email = "admin@example.com",
-                    password = "adminpassword",
+                    password = encoder.encode("adminpassword"),
                     role = Role.ADMIN.toString()
             )
     )
 
-    fun save(user: User): Boolean =
-        users.add(user)
-
+    fun save(user: User): Boolean {
+        val updated = user.copy(password = encoder.encode(user.password))
+        return users.add(updated)
+    }
     fun findByEmail(email: String): User? =
             users.firstOrNull { it.email == email }
 

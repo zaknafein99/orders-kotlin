@@ -1,12 +1,17 @@
 package com.kotlin.orders.entity
 
+import jakarta.persistence.*
 import java.util.UUID
 
+@Entity
+@Table(name = "users")
 data class User(
-        val id: UUID,
-        val email: String,
-        val password: String,
-        val role: String
+    @Id @GeneratedValue
+    val id: UUID?,
+    var email: String,
+    val password: String,
+    @Enumerated(EnumType.STRING)
+    val role: Role
 )
 
 enum class Role {

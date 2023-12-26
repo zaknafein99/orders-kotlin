@@ -14,19 +14,19 @@ class UserRepository(private val encoder: PasswordEncoder) {
                     id = UUID.randomUUID(),
                     email = "user1@example.com",
                     password = encoder.encode("password1"),
-                    role = Role.USER.toString()
+                    role = Role.USER
             ),
             User(
                     id = UUID.randomUUID(),
                     email = "user2@example.com",
                     password = encoder.encode("password2"),
-                    role = Role.USER.toString()
+                    role = Role.USER
             ),
             User(
                     id = UUID.randomUUID(),
                     email = "admin@example.com",
                     password = encoder.encode("adminpassword"),
-                    role = Role.ADMIN.toString()
+                    role = Role.ADMIN
             )
     )
 

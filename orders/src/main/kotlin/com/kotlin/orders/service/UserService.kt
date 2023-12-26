@@ -1,19 +1,19 @@
 package com.kotlin.orders.service
 
-import com.kotlin.orders.controller.user.UserRequest
 import com.kotlin.orders.controller.user.UserResponse
 import com.kotlin.orders.entity.User
 import com.kotlin.orders.mapper.UserMapper
-import com.kotlin.orders.repository.UserRepo
 import com.kotlin.orders.repository.UserRepository
 import mu.KLogging
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
 class UserService(
-        private val userRepository: UserRepo,
-        private val userMapper: UserMapper
+    private val userRepository: UserRepository,
+    private val userMapper: UserMapper,
+    private val encoder: PasswordEncoder
 ) {
 
     companion object : KLogging()
@@ -31,11 +31,8 @@ class UserService(
             userRepository.deleteById(id)
 
     fun create(user: User): UserResponse {
+        user.password = encoder.encode(user.password)
         val savedUser = userRepository.save(user)
-        return if (savedUser.email != null) {
-            userMapper.userToUserResponse(savedUser)
-        } else {
-            throw IllegalArgumentException("Email cannot be null")
-        }
+        return userMapper.userToUserResponse(savedUser)
     }
 }

@@ -9,7 +9,7 @@ data class User(
     @Id @GeneratedValue
     val id: UUID?,
     var email: String,
-    val password: String,
+    var password: String,
     @Enumerated(EnumType.STRING)
     val role: Role
 )

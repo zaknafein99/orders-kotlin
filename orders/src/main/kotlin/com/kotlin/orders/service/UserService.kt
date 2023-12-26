@@ -2,6 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.controller.user.UserResponse
 import com.kotlin.orders.entity.User
+import com.kotlin.orders.exceptionhandler.UserAlreadyExistsException
 import com.kotlin.orders.mapper.UserMapper
 import com.kotlin.orders.repository.UserRepository
 import mu.KLogging
@@ -34,7 +35,7 @@ class UserService(
         user.password = encoder.encode(user.password)
         val existingUser = this.findByEmail(user.email)
         if (existingUser != null) {
-            throw Exception("User already exists")
+            throw UserAlreadyExistsException(user.email)
         }
         return userMapper.userToUserResponse(userRepository.save(user))
     }

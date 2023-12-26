@@ -32,7 +32,10 @@ class UserService(
 
     fun create(user: User): UserResponse {
         user.password = encoder.encode(user.password)
-        val savedUser = userRepository.save(user)
-        return userMapper.userToUserResponse(savedUser)
+        val existingUser = this.findByEmail(user.email)
+        if (existingUser != null) {
+            throw Exception("User already exists")
+        }
+        return userMapper.userToUserResponse(userRepository.save(user))
     }
 }

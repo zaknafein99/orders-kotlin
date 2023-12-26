@@ -7,7 +7,7 @@ import java.util.*
 
 @Repository
 interface UserRepository : CrudRepository<User, Int> {
-    fun findByEmail(email: String): Any
-    fun findById(id: UUID): Any
-    fun deleteById(id: UUID): Any
+    fun findByEmail(email: String): User?
+    fun findById(id: UUID): User?
+    fun deleteById(id: UUID): User?
 }

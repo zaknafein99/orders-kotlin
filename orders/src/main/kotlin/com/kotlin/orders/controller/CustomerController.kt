@@ -21,7 +21,12 @@ class CustomerController(val customerService : CustomerService, val customerRepo
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun addCustomer(@RequestBody @Valid customerDTO: CustomerDTO): CustomerDTO {
+        val existingCustomer = customerRepository.findByPhoneNumber(customerDTO.phoneNumber)
+        if (existingCustomer != null) {
+            throw Exception("Customer with phone number ${customerDTO.phoneNumber} already exists")
+        }else{
         return customerService.addCustomer(customerDTO)
+        }
     }
 
     @PutMapping("/{customer_id}")

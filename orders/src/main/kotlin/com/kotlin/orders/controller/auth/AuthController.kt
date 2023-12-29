@@ -16,5 +16,12 @@ class AuthController(
     fun authenticate(@RequestBody authRequest: AuthenticationRequest): AuthenticationResponse =
             authenticationService.authentication(authRequest)
 
+    @PostMapping("/refresh")
+    fun refreshAccessToken(@RequestBody request: RefreshTokenRequest): TokenResponse =
+            authenticationService.refreshAccessToken(request.token)
+                ?.mapToTokenResponse()
+                ?: throw RuntimeException("Refresh token is not valid")
+
+    private fun String.mapToTokenResponse() = TokenResponse(this)
 
 }

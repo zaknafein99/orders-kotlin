@@ -11,42 +11,58 @@ import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
-
 @CrossOrigin
 @RestController
 @RequestMapping("/customer")
 @Validated
-class CustomerController(val customerService : CustomerService, val customerRepository: CustomerRepository) {
+class CustomerController(
+    val customerService: CustomerService,
+    val customerRepository: CustomerRepository
+) {
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun addCustomer(@RequestBody @Valid customerDTO: CustomerDTO): CustomerDTO {
-        return customerService.addCustomer(customerDTO)
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  fun addCustomer(@RequestBody @Valid customerDTO: CustomerDTO): CustomerDTO {
+    val existingCustomer = customerRepository.findByPhoneNumber(customerDTO.phoneNumber)
+    if (existingCustomer != null) {
+        throw RuntimeException("Customer with phone number ${customerDTO.phoneNumber} already exists")
     }
 
-    @PutMapping("/{customer_id}")
-    @ResponseStatus(HttpStatus.OK)
-    fun updateCustomer(@RequestBody @Valid customerDTO: CustomerDTO, @PathVariable("customer_id") customerId: Int) = customerService.updateCustomer(customerId, customerDTO)
+    return customerService.addCustomer(customerDTO)
+  }
 
-    @DeleteMapping("/{customer_id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCustomer(@PathVariable("customer_id") customerId: Int) = customerService.deleteCustomer(customerId)
+  @PutMapping("/{customer_id}")
+  @ResponseStatus(HttpStatus.OK)
+  fun updateCustomer(
+      @RequestBody @Valid customerDTO: CustomerDTO,
+      @PathVariable("customer_id") customerId: Int
+  ) = customerService.updateCustomer(customerId, customerDTO)
 
-    @GetMapping("/list")
-    fun getCustomersPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<CustomerDTO> {
-        return customerService.getCustomersPaged(pageable)
-    }
+  @DeleteMapping("/{customer_id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  fun deleteCustomer(@PathVariable("customer_id") customerId: Int) =
+      customerService.deleteCustomer(customerId)
 
+  @GetMapping("/list")
+  fun getCustomersPaged(
+      @PageableDefault(page = 0, size = 10) pageable: Pageable
+  ): Page<CustomerDTO> {
+    return customerService.getCustomersPaged(pageable)
+  }
 
-    @PostMapping("/list")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun addListOfCustomers (@RequestBody @Valid customerDTO: List<CustomerDTO>): List<CustomerDTO> {
-        return customerService.addListOfCustomers(customerDTO)
-    }
+  @PostMapping("/list")
+  @ResponseStatus(HttpStatus.CREATED)
+  fun addListOfCustomers(@RequestBody @Valid customerDTO: List<CustomerDTO>): List<CustomerDTO> {
+    return customerService.addListOfCustomers(customerDTO)
+  }
 
-    @GetMapping("/search_phone/{phone_number}")
-    @ResponseStatus(HttpStatus.OK)
-    fun getCustomerByPhoneNumber(@PathVariable("phone_number") phoneNumber: String, pageable: Pageable): Page<CustomerDTO> {
-        return customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
-    }
+  @GetMapping("/search_phone/{phone_number}")
+  @ResponseStatus(HttpStatus.OK)
+  fun getCustomerByPhoneNumber(
+      @PathVariable("phone_number") phoneNumber: String,
+      pageable: Pageable
+  ): Page<CustomerDTO> {
+    return customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
+  }
 }
+

@@ -20,19 +20,23 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerMapper.customerDTOToCustomer(customerDTO)
+
         //check if customer already exists
         val existingCustomer = customerRepository.findByPhoneNumber(customerEntity.phoneNumber)
         if (existingCustomer.isNotEmpty()) {
             throw CustomerAlreadyExistsException(existingCustomer[0].phoneNumber)
         }
+
         customerRepository.save(customerEntity)
 
         logger.info { "Customer added: $customerEntity" }
 
         return customerMapper.customerToCustomerDTO(customerEntity)
+
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
+
     val uniqueCustomers = customerDTO.toSet()
     val newCustomers = mutableListOf<CustomerDTO>()
     uniqueCustomers.forEach {
@@ -42,6 +46,7 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
             customerRepository.save(customerEntity)
             logger.info { "Customer added: $customerEntity" }
             newCustomers.add(customerMapper.customerToCustomerDTO(customerEntity))
+
         }
     }
     return newCustomers

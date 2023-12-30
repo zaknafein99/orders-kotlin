@@ -18,4 +18,5 @@ interface CustomerMapper {
     fun customerDTOListToCustomerList(customerDTOList: List<CustomerDTO>): List<Customer>
 
     fun customerListToCustomerDTOList(customerList: List<Customer>): List<CustomerDTO>
+
 }

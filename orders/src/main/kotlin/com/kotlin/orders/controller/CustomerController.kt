@@ -23,11 +23,6 @@ class CustomerController(
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   fun addCustomer(@RequestBody @Valid customerDTO: CustomerDTO): CustomerDTO {
-    val existingCustomer = customerRepository.findByPhoneNumber(customerDTO.phoneNumber)
-    if (existingCustomer != null) {
-        throw RuntimeException("Customer with phone number ${customerDTO.phoneNumber} already exists")
-    }
-
     return customerService.addCustomer(customerDTO)
   }
 
@@ -65,4 +60,3 @@ class CustomerController(
     return customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
   }
 }
-

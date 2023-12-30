@@ -1,6 +1,7 @@
 package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.CustomerDTO
+import com.kotlin.orders.exceptionhandler.CustomerAlreadyExistsException
 import com.kotlin.orders.exceptionhandler.CustomerNotFoundException
 import com.kotlin.orders.mapper.CustomerMapper
 import com.kotlin.orders.repository.CustomerRepository
@@ -19,6 +20,11 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     fun addCustomer(customerDTO: CustomerDTO): CustomerDTO {
 
         val customerEntity = customerMapper.customerDTOToCustomer(customerDTO)
+        //check if customer already exists
+        val existingCustomer = customerRepository.findByPhoneNumber(customerEntity.phoneNumber)
+        if (existingCustomer.isNotEmpty()) {
+            throw CustomerAlreadyExistsException(existingCustomer[0].phoneNumber)
+        }
         customerRepository.save(customerEntity)
 
         logger.info { "Customer added: $customerEntity" }
@@ -27,13 +33,19 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
     }
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
-
-        val customerEntity = customerMapper.customerDTOListToCustomerList(customerDTO)
-        customerRepository.saveAll(customerEntity)
-        logger.info { "Customer added: $customerEntity" }
-
-        return customerMapper.customerListToCustomerDTOList(customerEntity)
+    val uniqueCustomers = customerDTO.toSet()
+    val newCustomers = mutableListOf<CustomerDTO>()
+    uniqueCustomers.forEach {
+        val existingCustomer = customerRepository.findByPhoneNumber(it.phoneNumber)
+        if (existingCustomer.isEmpty()) {
+            val customerEntity = customerMapper.customerDTOToCustomer(it)
+            customerRepository.save(customerEntity)
+            logger.info { "Customer added: $customerEntity" }
+            newCustomers.add(customerMapper.customerToCustomerDTO(customerEntity))
         }
+    }
+    return newCustomers
+}
 
     fun updateCustomer(customerId: Int, customerDTO: CustomerDTO): CustomerDTO {
 

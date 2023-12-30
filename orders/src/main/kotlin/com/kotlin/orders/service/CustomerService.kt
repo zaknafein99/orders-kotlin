@@ -37,20 +37,20 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
 
     fun addListOfCustomers(customerDTO: List<CustomerDTO>): List<CustomerDTO> {
 
-    val uniqueCustomers = customerDTO.toSet()
-    val newCustomers = mutableListOf<CustomerDTO>()
-    uniqueCustomers.forEach {
-        val existingCustomer = customerRepository.findByPhoneNumber(it.phoneNumber)
-        if (existingCustomer.isEmpty()) {
-            val customerEntity = customerMapper.customerDTOToCustomer(it)
-            customerRepository.save(customerEntity)
-            logger.info { "Customer added: $customerEntity" }
-            newCustomers.add(customerMapper.customerToCustomerDTO(customerEntity))
+        val uniqueCustomers = customerDTO.toSet()
+        val newCustomers = mutableListOf<CustomerDTO>()
+        uniqueCustomers.forEach {
+            val existingCustomer = customerRepository.findByPhoneNumber(it.phoneNumber)
+            if (existingCustomer.isEmpty()) {
+                val customerEntity = customerMapper.customerDTOToCustomer(it)
+                customerRepository.save(customerEntity)
+                logger.info { "Customer added: $customerEntity" }
+                newCustomers.add(customerMapper.customerToCustomerDTO(customerEntity))
 
+            }
         }
+        return newCustomers
     }
-    return newCustomers
-}
 
     fun updateCustomer(customerId: Int, customerDTO: CustomerDTO): CustomerDTO {
 
@@ -61,7 +61,14 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
                 it.get().address = customerDTO.address
                 it.get().phoneNumber = customerDTO.phoneNumber
                 customerRepository.save(it.get())
-                CustomerDTO(it.get().id, it.get().name, it.get().address, it.get().phoneNumber, it.get().type, it.get().state)
+                CustomerDTO(
+                    it.get().id,
+                    it.get().name,
+                    it.get().address,
+                    it.get().phoneNumber,
+                    it.get().type,
+                    it.get().state
+                )
             }
         } else {
             throw CustomerNotFoundException("Customer not found with id: $customerId")

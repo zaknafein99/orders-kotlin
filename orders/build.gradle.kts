@@ -7,6 +7,11 @@ plugins {
 	kotlin("jvm") version "1.9.21"
 	kotlin("plugin.spring") version "1.9.21"
 	kotlin("plugin.jpa") version "1.9.21"
+
+	id("com.palantir.docker") version "0.33.0"
+	id("com.palantir.docker-run") version "0.33.0"
+
+
 }
 
 group = "com.example"
@@ -50,6 +55,18 @@ dependencies {
 
 	//logging
 	implementation ("io.github.microutils:kotlin-logging-jvm:2.0.11")
+}
+
+docker{
+	name = "${project.name}:${project.version}"
+
+}
+
+dockerRun {
+	name = "${project.name}"
+	image = "${project.name}:${project.version}"
+	ports("8080:8080")
+	clean = true
 }
 
 tasks.withType<KotlinCompile> {

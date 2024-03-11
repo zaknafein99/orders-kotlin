@@ -70,6 +70,18 @@ dockerRun {
 	clean = true
 }
 
+docker{
+	name = "${project.name}:${project.version}"
+
+}
+
+dockerRun {
+	name = "${project.name}"
+	image = "${project.name}:${project.version}"
+	ports("8080:8080")
+	clean = true
+}
+
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs += "-Xjsr305=strict"

@@ -23,6 +23,7 @@ class UserController(private val userService: UserService, private val userMappe
     }
 
     @GetMapping
+    //List all users
     fun listAll(): List<UserResponse> =
             userService.findAll()
                     .map { it.toResponse()!! }

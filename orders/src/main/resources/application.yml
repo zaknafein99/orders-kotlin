@@ -10,7 +10,7 @@ spring:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://192.168.1.7:5432/orders
     username: postgres
-    password: root
+    password: postgres
   jpa:
     #database: H2
     #database-platform: org.hibernate.dialect.H2Dialect

@@ -55,6 +55,7 @@ dependencies {
 
 	//logging
 	implementation ("io.github.microutils:kotlin-logging-jvm:2.0.11")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
 }
 
 docker{

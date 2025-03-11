@@ -45,17 +45,9 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("http://localhost:5175")
-        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        configuration.allowedHeaders = listOf(
-            "Origin", 
-            "Content-Type", 
-            "Accept", 
-            "Authorization", 
-            "Access-Control-Allow-Origin", 
-            "Access-Control-Request-Method", 
-            "Access-Control-Request-Headers"
-        )
+        configuration.addAllowedOriginPattern("*")
+        configuration.addAllowedMethod("*")
+        configuration.addAllowedHeader("*")
         configuration.allowCredentials = true
         configuration.maxAge = 3600L
         

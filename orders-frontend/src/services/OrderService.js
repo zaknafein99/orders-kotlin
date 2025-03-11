@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
+import AuthService from './AuthService'
 
 /**
  * Service for handling order-related API calls and operations
@@ -10,7 +11,7 @@ export default {
    * @returns {Promise} Promise with pending orders data
    */
   getPendingOrders() {
-    const token = localStorage.getItem('token')
+    const token = AuthService.getToken()
     if (!token) {
       eventBus.emit('auth-error')
       return Promise.reject(new Error('Authentication required'))
@@ -33,7 +34,7 @@ export default {
    * @returns {Promise} Promise with delivered orders data
    */
   getDeliveredOrders() {
-    const token = localStorage.getItem('token')
+    const token = AuthService.getToken()
     if (!token) {
       eventBus.emit('auth-error')
       return Promise.reject(new Error('Authentication required'))
@@ -82,7 +83,7 @@ export default {
    * @returns {Promise} Promise with created order data
    */
   createOrder(orderData) {
-    const token = localStorage.getItem('token')
+    const token = AuthService.getToken()
     if (!token) {
       eventBus.emit('auth-error')
       return Promise.reject(new Error('Authentication required'))
@@ -113,7 +114,7 @@ export default {
    * @returns {Promise} Promise with updated order data
    */
   updateOrderStatus(orderId, status) {
-    const token = localStorage.getItem('token')
+    const token = AuthService.getToken()
     if (!token) {
       eventBus.emit('auth-error')
       return Promise.reject(new Error('Authentication required'))
@@ -143,7 +144,7 @@ export default {
    * @returns {Promise} Promise with updated order data
    */
   markOrderAsDelivered(orderId) {
-    const token = localStorage.getItem('token')
+    const token = AuthService.getToken()
     if (!token) {
       eventBus.emit('auth-error')
       return Promise.reject(new Error('Authentication required'))
@@ -173,7 +174,7 @@ export default {
    */
   handleAuthError(error) {
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      localStorage.removeItem('token')
+      AuthService.logout()
       eventBus.emit('auth-error')
     }
   },

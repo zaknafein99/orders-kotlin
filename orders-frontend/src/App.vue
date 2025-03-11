@@ -1,5 +1,11 @@
 <script setup>
-// No imports needed here
+import { onMounted } from 'vue'
+import AuthService from './services/AuthService'
+
+onMounted(() => {
+  // Initialize authentication state when the app starts
+  AuthService.initAuth()
+})
 </script>
 
 <template>

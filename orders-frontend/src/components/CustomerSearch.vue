@@ -50,10 +50,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
 import NewOrderModal from './NewOrderModal.vue'
+import AuthService from '../services/AuthService'
 
 // Authentication
 const isAuthenticated = ref(false)
@@ -100,33 +101,18 @@ const login = async () => {
   
   try {
     console.log('Attempting login with:', authData)
-    const response = await axios.post('/auth', {
-      email: authData.email,
-      password: authData.password
-    })
     
-    console.log('Login response:', response.data)
+    // Use AuthService for login
+    const accessToken = await AuthService.login(authData.email, authData.password)
     
-    // The response contains accessToken and refreshToken
-    if (response.data && response.data.accessToken) {
-      token.value = response.data.accessToken
-      isAuthenticated.value = true
-      
-      // Store token in localStorage
-      localStorage.setItem('token', token.value)
-      
-      console.log('Authentication successful, token stored in localStorage')
-      
-      // Notify other components that login is successful
-      eventBus.emit('login-success', token.value)
-      
-      // Refresh customer search if needed
-      if (phoneNumber.value.length > 0) {
-        await searchCustomer()
-      }
-    } else {
-      console.error('Unexpected authentication response format:', response.data)
-      authError.value = 'Login failed: Unexpected server response'
+    token.value = accessToken
+    isAuthenticated.value = true
+    
+    console.log('Authentication successful')
+    
+    // Refresh customer search if needed
+    if (phoneNumber.value.length > 0) {
+      await searchCustomer()
     }
   } catch (error) {
     console.error('Authentication error:', error)
@@ -228,8 +214,14 @@ const searchCustomer = async () => {
     }
   }
 
-
-
+// Check for existing token on component mount
+onMounted(() => {
+  if (AuthService.isAuthenticated()) {
+    token.value = AuthService.getToken()
+    isAuthenticated.value = true
+    console.log('User is already authenticated')
+  }
+})
 </script>
 
 <style scoped>

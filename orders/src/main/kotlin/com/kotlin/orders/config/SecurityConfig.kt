@@ -28,6 +28,7 @@ class SecurityConfig(
                 authorize
                     .requestMatchers(
                         "/auth/**",
+                        "/auth",
                         "/user/**",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
@@ -44,9 +45,19 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("*")
+        configuration.allowedOrigins = listOf("http://localhost:5175")
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
-        configuration.allowedHeaders = listOf("*")
+        configuration.allowedHeaders = listOf(
+            "Origin", 
+            "Content-Type", 
+            "Accept", 
+            "Authorization", 
+            "Access-Control-Allow-Origin", 
+            "Access-Control-Request-Method", 
+            "Access-Control-Request-Headers"
+        )
+        configuration.allowCredentials = true
+        configuration.maxAge = 3600L
         
         val source = UrlBasedCorsConfigurationSource()
         source.registerCorsConfiguration("/**", configuration)

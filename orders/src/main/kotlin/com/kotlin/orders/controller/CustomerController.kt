@@ -82,17 +82,16 @@ class CustomerController(
     return customerService.addListOfCustomers(customerDTO)
   }
 
-  @Operation(summary = "Search customers by phone number")
+  @Operation(summary = "Search customer by exact phone number match")
   @ApiResponses(value = [
-    ApiResponse(responseCode = "200", description = "Successfully retrieved customers"),
-    ApiResponse(responseCode = "404", description = "No customers found with given phone number")
+    ApiResponse(responseCode = "200", description = "Successfully retrieved customer"),
+    ApiResponse(responseCode = "404", description = "No customer found with given phone number")
   ])
-  @GetMapping("/search_phone/{phone_number}")
+  @GetMapping("/by-phone/{phone_number}")
   @ResponseStatus(HttpStatus.OK)
   fun getCustomerByPhoneNumber(
-      @Parameter(description = "Phone number to search for") @PathVariable("phone_number") phoneNumber: String,
-      @Parameter(description = "Pagination parameters") pageable: Pageable
-  ): Page<CustomerDTO> {
-    return customerService.getCustomerByPhoneNumber(phoneNumber, pageable)
+      @Parameter(description = "Phone number to search for") @PathVariable("phone_number") phoneNumber: String
+  ): CustomerDTO {
+    return customerService.getCustomerByExactPhoneNumber(phoneNumber)
   }
 }

@@ -17,18 +17,33 @@ import java.time.LocalDate
 
 @RestController
 @RequestMapping("/orders")
+@CrossOrigin
 class OrderController(val orderService: OrderService) {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createOrder(@RequestBody @Valid orderDTO: OrderDTO): ResponseEntity<OrderDTO> =
-
         ResponseEntity.ok(orderService.createOrder(orderDTO))
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<OrderDTO> =
         orderService.getOrders(pageable)
+
+    @GetMapping("/pending")
+    @ResponseStatus(HttpStatus.OK)
+    fun getPendingOrders(): List<OrderDTO> =
+        orderService.getPendingOrders()
+
+    @GetMapping("/delivered")
+    @ResponseStatus(HttpStatus.OK)
+    fun getDeliveredOrders(): List<OrderDTO> =
+        orderService.getDeliveredOrders()
+
+    @PostMapping("/{orderId}/deliver")
+    @ResponseStatus(HttpStatus.OK)
+    fun markOrderAsDelivered(@PathVariable orderId: Int): OrderDTO =
+        orderService.markOrderAsDelivered(orderId)
 
     @GetMapping("/customer")
     @ResponseStatus(HttpStatus.OK)
@@ -40,7 +55,6 @@ class OrderController(val orderService: OrderService) {
     @ResponseStatus(HttpStatus.OK)
     fun getOrdersByCustomerPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable, @RequestParam phoneNumber: String): Page<OrderDTO> =
         orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
-
 
     @GetMapping("/truck/{truckId}")
     fun getOrdersByTruckIdAndDate(@PageableDefault(page = 0, size = 10) pageable: Pageable,

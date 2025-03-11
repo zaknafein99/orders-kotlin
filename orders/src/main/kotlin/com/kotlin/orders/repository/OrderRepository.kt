@@ -1,6 +1,7 @@
 package com.kotlin.orders.repository
 
 import com.kotlin.orders.entity.Order
+import com.kotlin.orders.entity.OrderStatus
 import org.springframework.data.domain.Page
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.domain.Pageable
@@ -21,5 +22,5 @@ interface OrderRepository : CrudRepository<Order, Int> {
 
     fun findAll(pageable: Pageable): Page<Order>
 
-
+    fun findByStatus(status: OrderStatus): List<Order>
 }

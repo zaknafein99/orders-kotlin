@@ -31,5 +31,13 @@ data class Order(
 
     val date: LocalDate,
 
-    val totalPrice: Double
+    val totalPrice: Double,
+
+    @Enumerated(EnumType.STRING)
+    val status: OrderStatus = OrderStatus.PENDING
 )
+
+enum class OrderStatus {
+    PENDING,
+    DELIVERED
+}

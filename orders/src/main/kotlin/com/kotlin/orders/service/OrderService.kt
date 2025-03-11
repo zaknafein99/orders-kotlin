@@ -2,9 +2,8 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
-
+import com.kotlin.orders.entity.OrderStatus
 import com.kotlin.orders.mapper.OrderMapper
-
 import com.kotlin.orders.repository.CustomerRepository
 import com.kotlin.orders.repository.ItemRepository
 import com.kotlin.orders.repository.OrderRepository
@@ -17,12 +16,11 @@ import java.time.LocalDate
 
 @Service
 class OrderService(
-    private val customerRepository : CustomerRepository,
-    private val truckRepository : TruckRepository,
-    private val itemRepository : ItemRepository,
-    private val orderRepository : OrderRepository,
-    private val orderMapper : OrderMapper
-
+    private val customerRepository: CustomerRepository,
+    private val truckRepository: TruckRepository,
+    private val itemRepository: ItemRepository,
+    private val orderRepository: OrderRepository,
+    private val orderMapper: OrderMapper
 ) {
 
     fun createOrder(orderDTO: OrderDTO): OrderDTO {
@@ -38,7 +36,8 @@ class OrderService(
             items = orderDTO.items.map { itemRepository.findById(it.id!!).get() },
             truck = truck,
             date = LocalDate.now(),
-            totalPrice = orderDTO.items.sumOf { it.price * it.quantity }
+            totalPrice = orderDTO.items.sumOf { it.price * it.quantity },
+            status = OrderStatus.PENDING
         )
 
         return orderMapper.toDto(orderRepository.save(orderEntity))
@@ -46,6 +45,24 @@ class OrderService(
 
     fun getOrders(pageable: Pageable): Page<OrderDTO> {
         return orderRepository.findAll(pageable).map { orderMapper.toDto(it) }
+    }
+
+    fun getPendingOrders(): List<OrderDTO> {
+        return orderRepository.findByStatus(OrderStatus.PENDING)
+            .map { orderMapper.toDto(it) }
+    }
+
+    fun getDeliveredOrders(): List<OrderDTO> {
+        return orderRepository.findByStatus(OrderStatus.DELIVERED)
+            .map { orderMapper.toDto(it) }
+    }
+
+    fun markOrderAsDelivered(orderId: Int): OrderDTO {
+        val order = orderRepository.findById(orderId)
+            .orElseThrow { EntityNotFoundException("Order not found with ID $orderId") }
+        
+        val updatedOrder = order.copy(status = OrderStatus.DELIVERED)
+        return orderMapper.toDto(orderRepository.save(updatedOrder))
     }
 
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {

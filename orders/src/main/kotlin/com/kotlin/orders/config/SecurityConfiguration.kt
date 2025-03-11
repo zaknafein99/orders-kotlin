@@ -23,10 +23,16 @@ class SecurityConfiguration(
     ): DefaultSecurityFilterChain =
             http
                 .csrf{ it.disable() }
+                .cors { it.disable() }
                 .authorizeHttpRequests{
                     it
-                            .requestMatchers("/auth", "/auth/refresh", "/error")
-                            .permitAll()
+                            .requestMatchers(
+                                "/auth", 
+                                "/auth/refresh", 
+                                "/error",
+                                "/customer/**",
+                                "/orders/**"
+                            ).permitAll()
                             .requestMatchers(HttpMethod.POST, "/user").permitAll()
                             .requestMatchers("/user**").hasRole("ADMIN")
                             .anyRequest().fullyAuthenticated()
@@ -34,7 +40,7 @@ class SecurityConfiguration(
                 .sessionManagement{
                     it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 }
-                 .authenticationProvider(authenticationProvider)
+                .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
                 .build()
 

@@ -81,7 +81,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { eventBus } from '../utils/eventBus'
-import axios from 'axios'
+import OrderService from '../services/OrderService'
 
 const pendingOrders = ref([
   {
@@ -126,25 +126,11 @@ const isLoading = ref(false)
 const fetchOrders = async () => {
   isLoading.value = true
   try {
-    // Check if we have a token in localStorage
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.log('No authentication token found - please log in')
-      return
-    }
-
-    console.log('Fetching orders with token:', token.substring(0, 15) + '...')
-
-    // Fetch pending orders
-    const pendingResponse = await axios.get('/orders/pending', {
-      headers: {
-        'Authorization': `Bearer ${token}` 
-      }
-    })
+    // Fetch pending orders using OrderService
+    const pendingData = await OrderService.getPendingOrders()
+    console.log('Pending orders response:', pendingData)
     
-    console.log('Pending orders response:', pendingResponse.data)
-    
-    pendingOrders.value = pendingResponse.data.map(order => ({
+    pendingOrders.value = pendingData.map(order => ({
       id: order.id,
       customerName: order.customer.name,
       createdAt: new Date(order.date),
@@ -152,16 +138,11 @@ const fetchOrders = async () => {
       total: order.totalPrice
     }))
     
-    // Fetch delivered orders
-    const deliveredResponse = await axios.get('/orders/delivered', {
-      headers: {
-        'Authorization': `Bearer ${token}` 
-      }
-    })
+    // Fetch delivered orders using OrderService
+    const deliveredData = await OrderService.getDeliveredOrders()
+    console.log('Delivered orders response:', deliveredData)
     
-    console.log('Delivered orders response:', deliveredResponse.data)
-    
-    deliveredOrders.value = deliveredResponse.data.map(order => ({
+    deliveredOrders.value = deliveredData.map(order => ({
       id: order.id,
       customerName: order.customer.name,
       createdAt: new Date(order.date),
@@ -173,13 +154,6 @@ const fetchOrders = async () => {
     console.log('Orders refreshed successfully')
   } catch (error) {
     console.error('Error fetching orders:', error)
-    if (error.response) {
-      if (error.response.status === 401 || error.response.status === 403) {
-        console.error('Authentication failed. Please log in again.')
-        // Clear token and force re-login
-        localStorage.removeItem('token')
-      }
-    }
   } finally {
     isLoading.value = false
   }
@@ -196,17 +170,8 @@ const formatDate = (date) => {
 
 const markAsDelivered = async (orderId) => {
   try {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.log('No authentication token found')
-      return
-    }
-    
-    await axios.post(`/orders/${orderId}/deliver`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}` 
-      }
-    })
+    // Use OrderService to update order status
+    await OrderService.updateOrderStatus(orderId, 'DELIVERED')
     
     // After successful API call, update the local state
     const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)

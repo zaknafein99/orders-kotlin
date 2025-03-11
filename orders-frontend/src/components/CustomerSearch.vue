@@ -35,48 +35,25 @@
         <p><strong>Address:</strong> {{ customer.address }}</p>
         <p><strong>Type:</strong> {{ customer.type === 'C' ? 'Customer' : 'Vendor' }}</p>
         <p><strong>Status:</strong> {{ customer.state === 'A' ? 'Active' : 'Inactive' }}</p>
-        <button @click="showNewOrderModal = true" class="new-order-btn">New Order</button>
+        <button @click="openNewOrderModal" class="new-order-btn">New Order</button>
       </div>
     </div>
 
-    <!-- New Order Modal -->
-    <div v-if="showNewOrderModal" class="modal">
-      <div class="modal-content">
-        <span class="close" @click="showNewOrderModal = false">&times;</span>
-        <h2>Create New Order</h2>
-        <div class="items-list">
-          <div v-for="(item, index) in availableItems" :key="index" class="item">
-            <div class="item-details">
-              <span>{{ item.name }}</span>
-              <span>${{ item.price.toFixed(2) }}</span>
-            </div>
-            <div class="item-actions">
-              <button @click="addToOrder(item)">Add to Order</button>
-            </div>
-          </div>
-        </div>
-        
-        <div v-if="currentOrder.items.length > 0" class="current-order">
-          <h3>Current Order</h3>
-          <div v-for="(item, index) in currentOrder.items" :key="index" class="order-item">
-            <span>{{ item.name }}</span>
-            <span>${{ item.price.toFixed(2) }}</span>
-            <button @click="removeFromOrder(index)" class="remove-btn">Remove</button>
-          </div>
-          <div class="order-total">
-            <strong>Total: ${{ calculateTotal().toFixed(2) }}</strong>
-          </div>
-          <button @click="submitOrder" class="submit-btn">Submit Order</button>
-        </div>
-      </div>
-    </div>
+    <!-- Using the new modular NewOrderModal component -->
+    <NewOrderModal 
+      :show="showNewOrderModal" 
+      :customer="customer" 
+      @close="closeNewOrderModal" 
+      @order-created="handleOrderCreated" 
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
+import NewOrderModal from './NewOrderModal.vue'
 
 // Authentication
 const isAuthenticated = ref(false)
@@ -96,17 +73,25 @@ const searchError = ref('')
 
 // Order management
 const showNewOrderModal = ref(false)
-const availableItems = ref([
-  { id: 1, name: 'Pizza', price: 12.99 },
-  { id: 2, name: 'Burger', price: 8.99 },
-  { id: 3, name: 'Salad', price: 6.99 },
-  { id: 4, name: 'Pasta', price: 10.99 },
-  { id: 5, name: 'Soda', price: 2.49 },
-  { id: 6, name: 'Fries', price: 3.99 },
-])
-const currentOrder = reactive({
-  items: []
-})
+
+// Function to open the order modal
+const openNewOrderModal = () => {
+  showNewOrderModal.value = true
+}
+
+// Function to close the order modal
+const closeNewOrderModal = () => {
+  showNewOrderModal.value = false
+}
+
+// Handle order created event from the modal
+const handleOrderCreated = (order) => {
+  console.log('Order created:', order)
+  // Notify other components that an order was created
+  eventBus.emit('order-created', order)
+  // Also emit order-submitted event to refresh order tables
+  eventBus.emit('order-submitted', order)
+}
 
 // Login function
 const login = async () => {
@@ -244,63 +229,7 @@ const searchCustomer = async () => {
   }
 
 
-// Order functions
-const addToOrder = (item) => {
-  currentOrder.items.push({...item})
-}
 
-const removeFromOrder = (index) => {
-  currentOrder.items.splice(index, 1)
-}
-
-const calculateTotal = () => {
-  return currentOrder.items.reduce((total, item) => total + item.price, 0)
-}
-
-const submitOrder = async () => {
-  if (!customer.value || currentOrder.items.length === 0) return
-  
-  try {
-    // Get token from localStorage
-    const storedToken = localStorage.getItem('token')
-    if (!storedToken) {
-      alert('Please log in to submit orders')
-      return
-    }
-    
-    // Prepare order data
-    const orderData = {
-      customerId: customer.value.id,
-      items: currentOrder.items.map(item => ({
-        itemId: item.id,
-        quantity: 1, // Default quantity
-        price: item.price
-      }))
-    }
-    
-    console.log('Submitting order:', orderData)
-    
-    // Make API call
-    const response = await axios.post('/orders', orderData, {
-      headers: {
-        'Authorization': `Bearer ${storedToken}`
-      }
-    })
-    
-    console.log('Order submission response:', response.data)
-    
-    // Handle success
-    alert(`Order for ${customer.value.name} submitted successfully!`)
-    currentOrder.items = []
-    showNewOrderModal.value = false
-    
-    // Refresh orders list through event bus
-    eventBus.emit('order-submitted')
-  } catch (error) {
-    console.error('Error submitting order:', error)
-    alert(`Failed to submit order: ${error.response?.data?.message || error.message}`)
-  }
-}
 </script>
 
 <style scoped>
@@ -417,6 +346,55 @@ const submitOrder = async () => {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.item:hover {
+  border-color: #42b883;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.item-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.item-price {
+  color: #42b883;
+  font-weight: bold;
+}
+
+.item-description {
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  color: #666;
+  flex-grow: 1;
+}
+
+.modal-loading,
+.modal-error,
+.no-items {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.modal-error {
+  color: #dc3545;
+}
+
+.retry-btn {
+  margin-top: 1rem;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background-color: #e9ecef;
 }
 
 .item-details {

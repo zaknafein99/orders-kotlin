@@ -26,6 +26,7 @@
               <th>{{ translations.createdAt }}</th>
               <th>{{ translations.itemCount }}</th>
               <th>{{ translations.total }}</th>
+              <th>{{ translations.truck }}</th>
               <th>{{ translations.actions }}</th>
             </tr>
           </thead>
@@ -37,7 +38,23 @@
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
-                <button @click="markAsDelivered(order.id)" class="action-btn deliver-btn">
+                <select 
+                  v-if="!order.truck" 
+                  v-model="orderTrucks[order.id]" 
+                  class="truck-select"
+                  @change="onTruckSelected(order.id, orderTrucks[order.id])"
+                >
+                  <option value="">{{ translations.selectTruck }}</option>
+                  <option v-for="truck in availableTrucks" :key="truck.id" :value="truck.id">{{ truck.name }}</option>
+                </select>
+                <span v-else>{{ order.truck.name }}</span>
+              </td>
+              <td>
+                <button 
+                  @click="markAsDelivered(order.id)" 
+                  class="action-btn deliver-btn"
+                  :disabled="!order.truck && !orderTrucks[order.id]"
+                >
                   {{ translations.markDelivered }}
                 </button>
               </td>
@@ -59,6 +76,7 @@
               <th>{{ translations.createdAt }}</th>
               <th>{{ translations.itemCount }}</th>
               <th>{{ translations.total }}</th>
+              <th>{{ translations.truck }}</th>
               <th>{{ translations.deliveredAt }}</th>
             </tr>
           </thead>
@@ -69,6 +87,7 @@
               <td>{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
+              <td>{{ order.truck ? order.truck.name : translations.noTruck }}</td>
               <td>{{ formatDate(order.deliveredAt) }}</td>
             </tr>
           </tbody>
@@ -79,10 +98,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, reactive } from 'vue'
 import { eventBus } from '../utils/eventBus'
 import OrderService from '../services/OrderService'
 import { translations } from '../utils/translations'
+
+// Track truck assignments for orders that don't have one yet
+const orderTrucks = reactive({})
+
+// Available trucks for selection
+const availableTrucks = ref([
+  { id: 1, name: 'Camión 1' },
+  { id: 2, name: 'Camión 2' },
+  { id: 3, name: 'Camión 3' }
+])
 
 const pendingOrders = ref([
   {
@@ -136,7 +165,11 @@ const fetchOrders = async () => {
       customerName: order.customer.name,
       createdAt: new Date(order.date),
       items: order.items,
-      total: order.totalPrice
+      total: order.totalPrice,
+      truck: order.truck ? {
+        id: order.truck.id,
+        name: order.truck.name
+      } : null
     }))
     
     // Fetch delivered orders using OrderService
@@ -149,7 +182,11 @@ const fetchOrders = async () => {
       createdAt: new Date(order.date),
       items: order.items,
       deliveredAt: new Date(order.date), // Using same date since backend doesn't have delivery date
-      total: order.totalPrice
+      total: order.totalPrice,
+      truck: order.truck ? {
+        id: order.truck.id,
+        name: order.truck.name
+      } : null
     }))
     
     console.log('Orders refreshed successfully')
@@ -169,14 +206,54 @@ const formatDate = (date) => {
   })
 }
 
+const onTruckSelected = async (orderId, truckId) => {
+  if (!truckId) return
+  
+  try {
+    console.log('Truck selected for order:', orderId, 'truck:', truckId)
+    await assignTruckToOrder(orderId, truckId)
+  } catch (error) {
+    console.error('Error handling truck selection:', error)
+  }
+}
+
+const assignTruckToOrder = async (orderId, truckId) => {
+  try {
+    console.log('Assigning truck to order:', orderId, 'truck:', truckId)
+    
+    // Call the API to assign the truck
+    await OrderService.assignTruckToOrder(orderId, truckId)
+    
+    // Update the local state
+    const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)
+    if (orderIndex !== -1) {
+      const selectedTruck = availableTrucks.value.find(truck => truck.id === truckId)
+      pendingOrders.value[orderIndex].truck = selectedTruck
+    }
+  } catch (error) {
+    console.error('Error assigning truck to order:', error)
+  }
+}
+
 const markAsDelivered = async (orderId) => {
   try {
     console.log('Marking order as delivered:', orderId)
+    
+    // If the order doesn't have a truck assigned yet, assign it first
+    const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)
+    if (orderIndex !== -1) {
+      const order = pendingOrders.value[orderIndex]
+      if (!order.truck && orderTrucks[orderId]) {
+        const truckId = orderTrucks[orderId]
+        // First assign the truck to the order
+        await assignTruckToOrder(orderId, truckId)
+      }
+    }
+    
     // Use OrderService to mark order as delivered
     await OrderService.markOrderAsDelivered(orderId)
     
     // After successful API call, update the local state
-    const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)
     if (orderIndex !== -1) {
       const order = {...pendingOrders.value[orderIndex]}
       order.deliveredAt = new Date()
@@ -303,5 +380,27 @@ th {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.truck-select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  min-width: 150px;
+  font-size: 0.9rem;
+  background-color: #fff;
+}
+
+.truck-select:focus {
+  border-color: #42b883;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+}
+
+.deliver-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 </style>

@@ -43,6 +43,10 @@ export const translations = {
   actions: 'Acciones',
   markDelivered: 'Marcar Entregado',
   noOrders: 'No hay pedidos para mostrar',
+  truck: 'Camión',
+  selectTruck: 'Seleccionar Camión',
+  truckRequired: 'Se requiere asignar un camión',
+  noTruck: 'Sin camión',
   
   // Order creation
   selectItems: 'Seleccionar Items',

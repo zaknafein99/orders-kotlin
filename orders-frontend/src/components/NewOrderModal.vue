@@ -39,6 +39,8 @@
             :items="currentOrder.items"
             :customer="customer"
             :trucks="availableTrucks"
+            :is-loading-trucks="isLoadingTrucks"
+            :trucks-error="trucksError"
             :is-submitting="isSubmittingOrder"
             :error="orderError"
             :success-message="orderSuccess"
@@ -59,6 +61,7 @@ import { eventBus } from '../utils/eventBus'
 import ItemSelector from './ItemSelector.vue'
 import OrderSummary from './OrderSummary.vue'
 import OrderService from '../services/OrderService'
+import TruckService from '../services/TruckService'
 import { translations } from '../utils/translations'
 
 // Props
@@ -89,11 +92,10 @@ const totalItems = ref(0)
 const currentOrder = reactive({
   items: []
 })
-const selectedTruck = ref({ id: 1, name: 'truck1' }) // Default truck
-const availableTrucks = ref([
-  { id: 1, name: 'truck1' },
-  { id: 2, name: 'truck2' }
-])
+const selectedTruck = ref(null) // Will be set after fetching trucks
+const availableTrucks = ref([])
+const isLoadingTrucks = ref(false)
+const trucksError = ref('')
 const orderDate = ref(new Date().toISOString().split('T')[0])
 const isSubmittingOrder = ref(false)
 const orderError = ref('')
@@ -123,6 +125,32 @@ const closeModal = () => {
   
   // Emit close event
   emit('close')
+}
+
+const fetchTrucks = async () => {
+  isLoadingTrucks.value = true
+  trucksError.value = ''
+  
+  try {
+    const trucks = await TruckService.getAllTrucks()
+    console.log('Trucks fetched:', trucks)
+    
+    if (Array.isArray(trucks)) {
+      availableTrucks.value = trucks
+      
+      // Set default selected truck if available
+      if (trucks.length > 0) {
+        selectedTruck.value = trucks[0]
+      }
+    } else {
+      trucksError.value = 'Invalid truck data format'
+    }
+  } catch (error) {
+    console.error('Error fetching trucks:', error)
+    trucksError.value = `Error fetching trucks: ${error.message || 'Unknown error'}`
+  } finally {
+    isLoadingTrucks.value = false
+  }
 }
 
 const fetchItems = async () => {
@@ -197,10 +225,23 @@ const submitOrder = async (orderData) => {
   orderError.value = ''
   orderSuccess.value = ''
   
+  // Validate truck selection
+  if (!selectedTruck.value) {
+    orderError.value = 'Please select a truck for this order'
+    isSubmittingOrder.value = false
+    return
+  }
+  
   try {
-    console.log('Submitting order:', orderData)
+    // Make sure to include the selected truck in the order data
+    const orderWithTruck = {
+      ...orderData,
+      truck: selectedTruck.value
+    }
     
-    const createdOrder = await OrderService.createOrder(orderData)
+    console.log('Submitting order with truck:', orderWithTruck)
+    
+    const createdOrder = await OrderService.createOrder(orderWithTruck)
     
     console.log('Order created:', createdOrder)
     orderSuccess.value = 'Order created successfully!'
@@ -230,9 +271,10 @@ const submitOrder = async (orderData) => {
 // Watch for modal visibility changes
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    // Reset and fetch items when modal opens
+    // Reset and fetch items and trucks when modal opens
     currentPage.value = 0
     fetchItems()
+    fetchTrucks()
   }
 })
 </script>

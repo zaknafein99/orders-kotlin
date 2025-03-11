@@ -84,15 +84,37 @@ export const filterItemsByText = (items, searchTerm) => {
  * @param {Array} items - Array of order items
  * @param {Object} truck - Truck object
  * @param {String} date - Order date
- * @returns {Object} - New order object
+ * @returns {Object} - New order object formatted for the API
  */
 export const createOrderObject = (customer, items, truck, date) => {
+  // Calculate the total price
+  const totalPrice = calculateOrderTotal(items)
+  
+  // Format the order data to exactly match the backend API expectations
+  // Based on the curl example
   return {
     id: null,
-    customer,
-    items,
-    truck,
-    date,
+    customer: {
+      id: customer.id,
+      name: customer.name,
+      address: customer.address || '',
+      phoneNumber: customer.phoneNumber || '',
+      type: customer.type || 'E',
+      state: customer.state || 'A'
+    },
+    items: items.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description || '',
+      price: Number(item.price),
+      quantity: item.quantity,
+      category: item.category || 'Uncategorized'
+    })),
+    truck: truck ? {
+      id: truck.id,
+      name: truck.name
+    } : null,
+    date: date,
     totalPrice: calculateOrderTotal(items),
     status: "PENDING"
   }
@@ -106,20 +128,42 @@ export const createOrderObject = (customer, items, truck, date) => {
 export const validateOrder = (order) => {
   const errors = []
   
+  // Validate customer
   if (!order.customer || !order.customer.id) {
     errors.push('Customer is required')
   }
   
+  // Validate items
   if (!order.items || order.items.length === 0) {
     errors.push('Order must have at least one item')
+  } else {
+    // Check that each item has the required fields
+    order.items.forEach((item, index) => {
+      if (!item.id) {
+        errors.push(`Item ${index + 1} is missing an ID`)
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        errors.push(`Item ${index + 1} must have a valid quantity`)
+      }
+    })
   }
   
+  // Validate truck
   if (!order.truck || !order.truck.id) {
     errors.push('Truck is required')
   }
   
+  // Validate date
   if (!order.date) {
     errors.push('Order date is required')
+  }
+  
+  // Log validation results
+  if (errors.length > 0) {
+    console.error('Order validation errors:', errors)
+    console.log('Invalid order data:', JSON.stringify(order, null, 2))
+  } else {
+    console.log('Order validation passed')
   }
   
   return {

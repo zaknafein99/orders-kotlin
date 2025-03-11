@@ -21,27 +21,74 @@ axios.defaults.withCredentials = true
 axios.defaults.headers.common['User-Agent'] = 'insomnia/8.4.5'
 axios.defaults.headers.post['Content-Type'] = 'application/json'
 
-// Add request interceptor for debugging
+// Add authentication token to all requests if available
+const token = localStorage.getItem('token')
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+}
+
+// Add request interceptor for debugging and authentication
 axios.interceptors.request.use(config => {
   console.log(`Making request: ${config.method?.toUpperCase()} ${config.url}`)
+  
+  // Add token to request if it exists and isn't already set
+  const token = localStorage.getItem('token')
+  if (token && !config.headers['Authorization']) {
+    // Make sure to use the exact token without any modifications
+    const authHeader = `Bearer ${token}`
+    config.headers['Authorization'] = authHeader
+    console.log(`Added token to request: ${config.url}`)
+    console.log(`Authorization header: ${authHeader.substring(0, 20)}...`)
+  }
+  
+  // Log the full request for debugging
+  if (config.url.includes('/orders') && config.method === 'post') {
+    console.log('Full request config:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data
+    })
+  }
+  
   return config
 }, error => {
   console.error('Request error:', error)
   return Promise.reject(error)
 })
 
-// Add response interceptor for debugging
+// Add response interceptor for debugging and authentication errors
 axios.interceptors.response.use(response => {
   console.log(`Response received: ${response.status} ${response.config.url}`)
   return response
 }, error => {
   // Handle specific error codes for authentication
-  if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-    console.error('Authentication error:', error.response.status, error.config?.url)
-    // Clear token from localStorage
-    localStorage.removeItem('token')
+  if (error.response) {
+    console.error(`Request failed with status: ${error.response.status}`, error.config?.url)
+    
+    if (error.response.status === 401 || error.response.status === 403) {
+      console.error('Authentication error:', error.response.status, error.config?.url)
+      console.error('Error details:', error.response.data)
+      
+      // Log the request that failed for debugging
+      console.error('Failed request details:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers,
+        data: error.config?.data
+      })
+      
+      // Clear token from localStorage
+      localStorage.removeItem('token')
+      
+      // Redirect to login page if needed
+      if (router.currentRoute.value.name !== 'login') {
+        router.push('/login')
+      }
+    }
+  } else {
+    console.error(`Request failed: ${error.message}`, error.config?.url)
   }
-  console.error(`Request failed: ${error.message}`, error.config?.url)
   return Promise.reject(error)
 })
 

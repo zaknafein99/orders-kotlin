@@ -153,27 +153,25 @@ const searchCustomer = async () => {
   isSearching.value = true
   searchError.value = ''
   try {
-      // Use the token from localStorage (which is set during login) instead of the ref value
-      const storedToken = localStorage.getItem('token')
+      // Get token using AuthService
+      const token = AuthService.getToken()
       
       // Check if we're authenticated
-      if (!storedToken) {
+      if (!token) {
         searchError.value = 'Please log in first'
         return
       }
       
+      // Ensure token is set in axios default headers
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      
       console.log('Searching for customer with phone:', phoneNumber.value)
-      console.log('Using token from localStorage:', storedToken.substring(0, 15) + '...')
+      console.log('Using token:', token.substring(0, 15) + '...')
       
       // Notice: axios.defaults.baseURL is already set to '/api' in main.js
       // So this will be sent as /api/customer/by-phone/... and vite proxy will rewrite to /customer/by-phone/...
       const response = await axios.get(
-        `/customer/by-phone/${phoneNumber.value}?size=5&page=0`,
-        {
-          headers: {
-            'Authorization': `Bearer ${storedToken}`
-          }
-        }
+        `/customer/by-phone/${phoneNumber.value}?size=5&page=0`
       )
       
       console.log('Customer search response:', response.data)

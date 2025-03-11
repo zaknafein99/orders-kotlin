@@ -13,7 +13,15 @@
       <!-- Truck selection -->
       <div class="truck-selection">
         <label for="truck-select">{{ translations.selectTruck }}:</label>
-        <select id="truck-select" v-model="selectedTruck" @change="updateTruck">
+        <div v-if="isLoadingTrucks" class="loading-indicator">
+          <div class="spinner-sm"></div>
+          <span>Loading trucks...</span>
+        </div>
+        <div v-else-if="trucksError" class="error-message">
+          {{ trucksError }}
+        </div>
+        <select v-else id="truck-select" v-model="selectedTruck" @change="updateTruck">
+          <option v-if="trucks.length === 0" disabled>No trucks available</option>
           <option v-for="truck in trucks" :key="truck.id" :value="truck">
             {{ truck.name }}
           </option>
@@ -68,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue'
+import { ref, computed, defineProps, defineEmits, watch } from 'vue'
 import { calculateOrderTotal, formatPrice, createOrderObject, validateOrder } from '../utils/orderUtils'
 import { translations } from '../utils/translations'
 
@@ -83,10 +91,15 @@ const props = defineProps({
   },
   trucks: {
     type: Array,
-    default: () => [
-      { id: 1, name: 'truck1' },
-      { id: 2, name: 'truck2' }
-    ]
+    default: () => []
+  },
+  isLoadingTrucks: {
+    type: Boolean,
+    default: false
+  },
+  trucksError: {
+    type: String,
+    default: ''
   },
   isSubmitting: {
     type: Boolean,
@@ -105,8 +118,16 @@ const props = defineProps({
 const emit = defineEmits(['remove-item', 'submit', 'update-truck', 'update-date'])
 
 // State
-const selectedTruck = ref(props.trucks[0])
+const selectedTruck = ref(props.trucks.length > 0 ? props.trucks[0] : null)
 const orderDate = ref(new Date().toISOString().split('T')[0])
+
+// Watch for trucks changes to set default selected truck
+watch(() => props.trucks, (newTrucks) => {
+  if (newTrucks.length > 0 && !selectedTruck.value) {
+    selectedTruck.value = newTrucks[0]
+    emit('update-truck', newTrucks[0])
+  }
+}, { immediate: true })
 
 // Computed properties
 const todayFormatted = computed(() => {
@@ -149,6 +170,37 @@ const updateDate = () => {
 </script>
 
 <style scoped>
+/* Truck loading styles */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 0.9em;
+  margin-top: 5px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Component styles */
 .order-summary-component {
   display: flex;
   flex-direction: column;

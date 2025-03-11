@@ -138,6 +138,36 @@ export default {
   },
 
   /**
+   * Mark an order as delivered
+   * @param {Number} orderId Order ID
+   * @returns {Promise} Promise with updated order data
+   */
+  markOrderAsDelivered(orderId) {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      eventBus.emit('auth-error')
+      return Promise.reject(new Error('Authentication required'))
+    }
+
+    return axios.post(`/orders/${orderId}/deliver`, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      const updatedOrder = response.data
+      // Refresh order tables
+      this.refreshOrders(updatedOrder)
+      return updatedOrder
+    })
+    .catch(error => {
+      this.handleAuthError(error)
+      throw error
+    })
+  },
+
+  /**
    * Handle authentication errors
    * @param {Error} error Error object
    */

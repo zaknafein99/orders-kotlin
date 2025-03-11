@@ -170,8 +170,9 @@ const formatDate = (date) => {
 
 const markAsDelivered = async (orderId) => {
   try {
-    // Use OrderService to update order status
-    await OrderService.updateOrderStatus(orderId, 'DELIVERED')
+    console.log('Marking order as delivered:', orderId)
+    // Use OrderService to mark order as delivered
+    await OrderService.markOrderAsDelivered(orderId)
     
     // After successful API call, update the local state
     const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)

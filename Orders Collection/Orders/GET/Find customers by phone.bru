@@ -1,0 +1,24 @@
+meta {
+  name: Find customers by phone
+  type: http
+  seq: 14
+}
+
+get {
+  url: localhost:8080/customer/by-phone/35073
+  body: none
+  auth: bearer
+}
+
+params:query {
+  size: 5
+  page: 0
+}
+
+headers {
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NDE3MTgxNTAsImV4cCI6MTc0MTcyMTc1MH0.d0i-MrhlhJG4rrNYG3EP7zqgzOn7ebEXiHto5kOdsm0
+}

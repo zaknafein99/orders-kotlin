@@ -1,0 +1,23 @@
+meta {
+  name: Authorization
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{host}}/auth
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.4.5
+}
+
+body:json {
+  {
+  	"email": "admin@gmail.com",
+  	"password": "password"
+  }
+}

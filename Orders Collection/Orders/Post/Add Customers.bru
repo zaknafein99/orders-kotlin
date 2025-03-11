@@ -1,0 +1,43 @@
+meta {
+  name: Add Customers
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{host}}/customer/list
+  body: json
+  auth: bearer
+}
+
+params:query {
+  ~: 
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  [
+    {
+      "name": "John Doe",
+      "address": "123 Main St",
+      "phoneNumber": "535-1234",
+  		"type": "E",
+      "state": "A"
+    },
+    {
+      "name": "Jane Smiths",
+      "address": "454 Oak St",
+      "phoneNumber": "355-5678",
+  		"type": "E",
+      "state": "A"
+    }
+  ]
+}

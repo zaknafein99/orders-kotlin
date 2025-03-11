@@ -1,0 +1,25 @@
+meta {
+  name: Get all customers
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{host}}/customer/list
+  body: none
+  auth: bearer
+}
+
+params:query {
+  size: 20
+  page: 0
+  sort: id
+}
+
+headers {
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Add truck
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{host}}/truck
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+body:json {
+  {
+  	"name": "truck1"
+  }
+}

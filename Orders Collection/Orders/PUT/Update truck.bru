@@ -1,0 +1,22 @@
+meta {
+  name: Update truck
+  type: http
+  seq: 6
+}
+
+put {
+  url: localhost:8080/truck/2
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+body:json {
+  {
+  		"name": "El unico"
+  	}
+}

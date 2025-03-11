@@ -1,0 +1,22 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{host}}/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.4.5
+}
+
+body:json {
+  {
+  	"token": "eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3MDM4ODgxOTEsImV4cCI6MTcwMzk3NDU5MX0.V8_g9eCgxqmzyVCSHoJNNidZm27FzJzgGQwLv5AyjwbbO929E_pL-9FZaUGJL3a2"
+  }
+}

@@ -1,18 +1,18 @@
 <template>
   <div class="order-summary-component">
-    <h3>Current Order</h3>
+    <h3>{{ translations.currentOrder }}</h3>
     
     <!-- Empty order state -->
     <div v-if="items.length === 0" class="empty-order">
-      <p>Your order is empty</p>
-      <p class="instruction">Add items from the list on the left</p>
+      <p>{{ translations.emptyOrder }}</p>
+      <p class="instruction">{{ translations.addItemsInstruction }}</p>
     </div>
     
     <!-- Order items -->
     <div v-else class="order-content">
       <!-- Truck selection -->
       <div class="truck-selection">
-        <label for="truck-select">Select Truck:</label>
+        <label for="truck-select">{{ translations.selectTruck }}:</label>
         <select id="truck-select" v-model="selectedTruck" @change="updateTruck">
           <option v-for="truck in trucks" :key="truck.id" :value="truck">
             {{ truck.name }}
@@ -22,7 +22,7 @@
       
       <!-- Order date -->
       <div class="order-date">
-        <label for="order-date">Order Date:</label>
+        <label for="order-date">{{ translations.orderDate }}:</label>
         <input 
           type="date" 
           id="order-date" 
@@ -40,21 +40,21 @@
             <span class="item-quantity">x{{ item.quantity }}</span>
             <span class="item-price">{{ formatPrice(Number(item.price) * item.quantity) }}</span>
           </div>
-          <button @click="removeItem(index)" class="remove-btn">Remove</button>
+          <button @click="removeItem(index)" class="remove-btn">{{ translations.remove }}</button>
         </div>
       </div>
       
       <!-- Order summary -->
       <div class="order-total-section">
         <div class="order-total">
-          <strong>Total:</strong> {{ formatPrice(calculateOrderTotal(items)) }}
+          <strong>{{ translations.total }}:</strong> {{ formatPrice(calculateOrderTotal(items)) }}
         </div>
         <button 
           @click="submitOrder" 
           :disabled="isSubmitting || items.length === 0 || !selectedTruck" 
           class="submit-btn"
         >
-          {{ isSubmitting ? 'Submitting...' : 'Submit Order' }}
+          {{ isSubmitting ? translations.submitting : translations.submitOrder }}
         </button>
         <div v-if="error" class="order-error">
           {{ error }}
@@ -70,6 +70,7 @@
 <script setup>
 import { ref, computed, defineProps, defineEmits } from 'vue'
 import { calculateOrderTotal, formatPrice, createOrderObject, validateOrder } from '../utils/orderUtils'
+import { translations } from '../utils/translations'
 
 const props = defineProps({
   items: {

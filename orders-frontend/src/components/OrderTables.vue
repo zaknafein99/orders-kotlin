@@ -1,32 +1,32 @@
 <template>
   <div class="order-tables">
     <div class="tables-header">
-      <h2>Orders Dashboard</h2>
+      <h2>Panel de Pedidos</h2>
       <button @click="fetchOrders" class="refresh-btn">
-        <span class="refresh-icon">↻</span> Refresh
+        <span class="refresh-icon">↻</span> Actualizar
       </button>
     </div>
 
     <div v-if="isLoading" class="loading">
       <div class="spinner"></div>
-      <p>Loading orders...</p>
+      <p>Cargando pedidos...</p>
     </div>
 
     <div v-else>
       <div class="table-section">
-        <h3>Pending Orders</h3>
+        <h3>{{ translations.pendingOrders }}</h3>
         <div v-if="pendingOrders.length === 0" class="empty-state">
-          <p>No pending orders</p>
+          <p>{{ translations.noOrders }}</p>
         </div>
         <table v-else>
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Actions</th>
+              <th>{{ translations.orderID }}</th>
+              <th>{{ translations.customer }}</th>
+              <th>{{ translations.createdAt }}</th>
+              <th>{{ translations.itemCount }}</th>
+              <th>{{ translations.total }}</th>
+              <th>{{ translations.actions }}</th>
             </tr>
           </thead>
           <tbody>
@@ -38,7 +38,7 @@
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
                 <button @click="markAsDelivered(order.id)" class="action-btn deliver-btn">
-                  Mark Delivered
+                  {{ translations.markDelivered }}
                 </button>
               </td>
             </tr>
@@ -47,19 +47,19 @@
       </div>
 
       <div class="table-section">
-        <h3>Delivered Orders</h3>
+        <h3>{{ translations.deliveredOrders }}</h3>
         <div v-if="deliveredOrders.length === 0" class="empty-state">
-          <p>No delivered orders</p>
+          <p>{{ translations.noOrders }}</p>
         </div>
         <table v-else>
           <thead>
             <tr>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Delivered At</th>
+              <th>{{ translations.orderID }}</th>
+              <th>{{ translations.customer }}</th>
+              <th>{{ translations.createdAt }}</th>
+              <th>{{ translations.itemCount }}</th>
+              <th>{{ translations.total }}</th>
+              <th>{{ translations.deliveredAt }}</th>
             </tr>
           </thead>
           <tbody>
@@ -82,6 +82,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { eventBus } from '../utils/eventBus'
 import OrderService from '../services/OrderService'
+import { translations } from '../utils/translations'
 
 const pendingOrders = ref([
   {

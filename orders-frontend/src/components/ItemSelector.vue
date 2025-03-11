@@ -7,28 +7,28 @@
         :disabled="currentPage === 0 || isLoading"
         class="pagination-btn"
       >
-        &laquo; Previous
+        &laquo; Anterior
       </button>
-      <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+      <span class="page-info">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
       <button 
         @click="$emit('change-page', currentPage + 1)" 
         :disabled="currentPage >= totalPages - 1 || isLoading"
         class="pagination-btn"
       >
-        Next &raquo;
+        Siguiente &raquo;
       </button>
     </div>
     
     <!-- Items loading state -->
     <div v-if="isLoading" class="items-loading">
       <div class="spinner"></div>
-      <p>Loading items...</p>
+      <p>Cargando items...</p>
     </div>
     
     <!-- Items error state -->
     <div v-if="error" class="items-error">
       <p>{{ error }}</p>
-      <button @click="$emit('retry')" class="retry-btn">Retry</button>
+      <button @click="$emit('retry')" class="retry-btn">Reintentar</button>
     </div>
     
     <!-- Items list -->
@@ -42,7 +42,7 @@
           {{ item.description }}
         </div>
         <div class="item-category" v-if="item.category">
-          Category: {{ item.category }}
+          Categoría: {{ item.category }}
         </div>
         <div class="item-actions">
           <div class="quantity-control">
@@ -59,7 +59,7 @@
             :disabled="getItemQuantity(item.id) <= 0" 
             class="add-btn"
           >
-            Add to Order
+            Agregar al Pedido
           </button>
         </div>
       </div>
@@ -67,7 +67,7 @@
     
     <!-- No items state -->
     <div v-if="!isLoading && !error && items.length === 0" class="no-items">
-      <p>No items available</p>
+      <p>No hay items disponibles</p>
     </div>
   </div>
 </template>
@@ -75,6 +75,7 @@
 <script setup>
 import { defineProps, defineEmits, reactive } from 'vue'
 import { formatPrice } from '../utils/orderUtils'
+import { translations } from '../utils/translations'
 
 const props = defineProps({
   items: {

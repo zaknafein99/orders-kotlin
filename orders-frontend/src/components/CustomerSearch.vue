@@ -1,41 +1,41 @@
 <template>
   <div class="customer-search">
     <div v-if="!isAuthenticated" class="auth-section">
-      <h3>Login to continue</h3>
+      <h3>{{ translations.loginToContinue }}</h3>
       <input
         v-model="authData.email"
         type="email"
-        placeholder="Email"
+        :placeholder="translations.email"
       />
       <input
         v-model="authData.password"
         type="password"
-        placeholder="Password"
+        :placeholder="translations.password"
       />
-      <button @click="login" :disabled="isLoading">{{ isLoading ? 'Logging in...' : 'Login' }}</button>
+      <button @click="login" :disabled="isLoading">{{ isLoading ? translations.loggingIn : translations.login }}</button>
       <p v-if="authError" class="error">{{ authError }}</p>
     </div>
 
     <div v-if="isAuthenticated" class="search-section">
-      <h3>Search Customer</h3>
+      <h3>{{ translations.searchCustomer }}</h3>
       <div class="search-input-group">
         <input
           v-model="phoneNumber"
           type="text"
-          placeholder="Search by phone number"
+          :placeholder="translations.searchByPhoneNumber"
         />
-        <button @click="searchCustomer" :disabled="isSearching || !phoneNumber || phoneNumber.length < 3">Search</button>
+        <button @click="searchCustomer" :disabled="isSearching || !phoneNumber || phoneNumber.length < 3">{{ translations.search }}</button>
       </div>
-      <div v-if="isSearching" class="loading-indicator">Searching...</div>
+      <div v-if="isSearching" class="loading-indicator">{{ translations.searching }}</div>
       <div v-if="searchError" class="error">{{ searchError }}</div>
 
       <div v-if="customer" class="customer-details">
         <h3>{{ customer.name }}</h3>
-        <p><strong>Phone:</strong> {{ customer.phoneNumber }}</p>
-        <p><strong>Address:</strong> {{ customer.address }}</p>
-        <p><strong>Type:</strong> {{ customer.type === 'C' ? 'Customer' : 'Vendor' }}</p>
-        <p><strong>Status:</strong> {{ customer.state === 'A' ? 'Active' : 'Inactive' }}</p>
-        <button @click="openNewOrderModal" class="new-order-btn">New Order</button>
+        <p><strong>{{ translations.phoneNumber }}:</strong> {{ customer.phoneNumber }}</p>
+        <p><strong>{{ translations.address }}:</strong> {{ customer.address }}</p>
+        <p><strong>Tipo:</strong> {{ customer.type === 'C' ? 'Cliente' : 'Proveedor' }}</p>
+        <p><strong>Estado:</strong> {{ customer.state === 'A' ? 'Activo' : 'Inactivo' }}</p>
+        <button @click="openNewOrderModal" class="new-order-btn">{{ translations.newOrder }}</button>
       </div>
     </div>
 
@@ -55,6 +55,7 @@ import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
 import NewOrderModal from './NewOrderModal.vue'
 import AuthService from '../services/AuthService'
+import { translations } from '../utils/translations'
 
 // Authentication
 const isAuthenticated = ref(false)
@@ -124,10 +125,10 @@ const login = async () => {
       } else if (error.response.status === 403) {
         authError.value = 'You are not authorized to access this system.'
       } else {
-        authError.value = `Login failed: ${error.response.data?.message || error.message}`
+        authError.value = `${translations.loginFailed}: ${error.response.data?.message || error.message}`
       }
     } else {
-      authError.value = 'Login failed. Please check your network connection.'
+      authError.value = `${translations.loginFailed}. ${translations.networkError}`
     }
   } finally {
     isLoading.value = false
@@ -198,15 +199,15 @@ const searchCustomer = async () => {
         console.error('Response data:', error.response.data)
         
         if (error.response.status === 401 || error.response.status === 403) {
-          searchError.value = 'Authentication failed. Please log in again.'
+          searchError.value = translations.authError
           isAuthenticated.value = false
           token.value = ''
           localStorage.removeItem('token')
         } else {
-          searchError.value = `Error searching for customer: ${error.response.status}`
+          searchError.value = `${translations.errorSearchingCustomer}: ${error.response.status}`
         }
       } else {
-        searchError.value = 'Error searching for customer: Network error'
+        searchError.value = `${translations.errorSearchingCustomer}: ${translations.networkError}`
       }
       customer.value = null
     } finally {

@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import AuthService from './services/AuthService'
+import { translations } from './utils/translations'
 
 onMounted(() => {
   // Initialize authentication state when the app starts
@@ -11,7 +12,7 @@ onMounted(() => {
 <template>
   <div class="app">
     <header>
-      <h1>Orders Management</h1>
+      <h1>{{ translations.appTitle }}</h1>
     </header>
     <main>
       <router-view />

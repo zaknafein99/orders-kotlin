@@ -2,25 +2,25 @@
   <div v-if="show" class="modal">
     <div class="modal-content">
       <span class="close" @click="closeModal">&times;</span>
-      <h2>Create New Order for {{ customer?.name }}</h2>
+      <h2>{{ translations.newOrder }} - {{ customer?.name }}</h2>
       
       <!-- Items loading state -->
       <div v-if="isLoadingItems" class="modal-loading">
         <div class="spinner"></div>
-        <p>Loading available items...</p>
+        <p>Cargando items disponibles...</p>
       </div>
       
       <!-- Items error state -->
       <div v-if="itemsError" class="modal-error">
         <p>{{ itemsError }}</p>
-        <button @click="fetchItems" class="retry-btn">Retry</button>
+        <button @click="fetchItems" class="retry-btn">Reintentar</button>
       </div>
       
       <!-- Modal layout -->
       <div class="order-modal-layout">
         <!-- Left side: Available items list -->
         <div class="available-items-section">
-          <h3>Available Items</h3>
+          <h3>Items Disponibles</h3>
           <ItemSelector 
             :items="availableItems"
             :is-loading="isLoadingItems"
@@ -59,6 +59,7 @@ import { eventBus } from '../utils/eventBus'
 import ItemSelector from './ItemSelector.vue'
 import OrderSummary from './OrderSummary.vue'
 import OrderService from '../services/OrderService'
+import { translations } from '../utils/translations'
 
 // Props
 const props = defineProps({

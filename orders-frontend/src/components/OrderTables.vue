@@ -1,21 +1,22 @@
 <template>
   <div class="order-tables">
     <div class="tables-header">
-      <h2>Panel de Pedidos</h2>
+      <h2><i class="fas fa-clipboard-list"></i> Panel de Pedidos</h2>
       <button @click="fetchOrders" class="refresh-btn">
-        <span class="refresh-icon">↻</span> Actualizar
+        <i class="fas fa-sync-alt refresh-icon"></i> Actualizar
       </button>
     </div>
 
     <div v-if="isLoading" class="loading">
-      <div class="spinner"></div>
+      <i class="fas fa-spinner fa-spin fa-2x"></i>
       <p>Cargando pedidos...</p>
     </div>
 
     <div v-else>
       <div class="table-section">
-        <h3>{{ translations.pendingOrders }}</h3>
+        <h3><i class="fas fa-clock"></i> {{ translations.pendingOrders }}</h3>
         <div v-if="pendingOrders.length === 0" class="empty-state">
+          <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
         </div>
         <table v-else>
@@ -59,7 +60,7 @@
                   class="action-btn deliver-btn"
                   :disabled="!order.truck && !orderTrucks[order.id]"
                 >
-                  {{ translations.markDelivered }}
+                  <i class="fas fa-truck"></i> {{ translations.markDelivered }}
                 </button>
               </td>
             </tr>
@@ -68,8 +69,9 @@
       </div>
 
       <div class="table-section">
-        <h3>{{ translations.deliveredOrders }}</h3>
+        <h3><i class="fas fa-check-circle"></i> {{ translations.deliveredOrders }}</h3>
         <div v-if="deliveredOrders.length === 0" class="empty-state">
+          <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
         </div>
         <table v-else>
@@ -416,73 +418,164 @@ onUnmounted(() => {
 <style scoped>
 .order-tables {
   background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  box-shadow: var(--box-shadow);
+  overflow-x: auto;
+  width: 100%;
 }
 
 .tables-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.tables-header h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin: 0;
+  background-color: rgba(52, 152, 219, 0.08);
+  padding: 0.5rem 1rem;
+  border-radius: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .refresh-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: #f8f9fa;
-  color: #333;
-  border: 1px solid #ddd;
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.refresh-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .refresh-icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .table-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .table-section h3 {
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid #f5f5f5;
+  background-color: var(--dark-color);
+  color: white;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
+
+.table-section h3 i {
+  color: white;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1rem;
+  font-size: var(--table-font-size);
+  table-layout: fixed;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
-  padding: 0.75rem;
+  padding: 0.2rem 0.3rem;
   text-align: left;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
 }
 
 th {
-  background-color: #f8f9fa;
-  font-weight: bold;
+  background-color: var(--dark-color);
+  color: white;
+  font-weight: 600;
+  font-size: var(--table-header-font-size);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
+tr:nth-child(even) {
+  background-color: rgba(240, 244, 248, 0.5);
+}
+
+tr:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+/* Column widths */
+th:nth-child(1), td:nth-child(1) { width: 6%; } /* Order ID */
+th:nth-child(2), td:nth-child(2) { width: 20%; } /* Customer */
+th:nth-child(3), td:nth-child(3) { width: 10%; } /* Created At */
+th:nth-child(4), td:nth-child(4) { width: 10%; } /* Items - increased for better visibility */
+th:nth-child(5), td:nth-child(5) { width: 7%; } /* Total */
+th:nth-child(6), td:nth-child(6) { width: 20%; } /* Truck - reduced from 30% to 20% */
+th:nth-child(7), td:nth-child(7) { width: 17%; } /* Actions/Delivered - reduced to balance */
+
 .action-btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: 0.1rem 0.2rem;
+  font-size: 0.6rem;
+  height: auto;
+  min-height: 0;
+  line-height: 1;
+  border-radius: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .deliver-btn {
-  background-color: #17a2b8;
+  background-color: var(--secondary-color);
+  white-space: nowrap;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
 }
 
 .empty-state {
-  padding: 2rem;
+  padding: 1.25rem;
   text-align: center;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  color: #6c757d;
+  background-color: rgba(245, 247, 250, 0.5);
+  border-radius: var(--border-radius);
+  color: var(--gray-color);
+  font-size: 0.9rem;
+  border: 1px dashed #ddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-state i {
+  font-size: 1.5rem;
+  opacity: 0.7;
 }
 
 .loading {
@@ -490,17 +583,22 @@ th {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 2rem;
+}
+
+.loading p {
+  color: var(--gray-color);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #42b883;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
 }
 
 @keyframes spin {
@@ -509,39 +607,44 @@ th {
 }
 
 .truck-select {
-  padding: 0.5rem;
+  padding: 0.1rem 0.2rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   width: 100%;
-  min-width: 150px;
-  font-size: 0.9rem;
+  min-width: 100px;
+  max-width: 150px;
+  font-size: 0.65rem;
   background-color: #fff;
   color: #333;
   appearance: auto;
+  height: 22px;
 }
 
 .truck-select option {
   background-color: #fff;
   color: #333;
-  padding: 8px;
+  padding: 1px;
+  font-size: 0.65rem;
 }
 
 .truck-select:focus {
-  border-color: #42b883;
+  border-color: var(--primary-color);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(66, 184, 131, 0.2);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .deliver-btn:disabled {
-  background-color: #ccc;
+  background-color: var(--gray-color);
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 .loading-indicator {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
+  font-size: 10px;
+  color: var(--gray-color);
+  margin-top: 1px;
   font-style: italic;
   display: block;
 }
@@ -549,12 +652,17 @@ th {
 .truck-selection-container {
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .selected-truck-indicator {
-  font-size: 13px;
-  color: #42b883;
-  font-weight: bold;
-  margin-top: 4px;
+  font-size: 9px;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 }
 </style>

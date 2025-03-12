@@ -38,7 +38,7 @@ export const translations = {
   customer: 'Cliente',
   createdAt: 'Fecha Creación',
   deliveredAt: 'Fecha Entrega',
-  itemCount: 'Cantidad Items',
+  itemCount: 'Items',
   total: 'Total',
   actions: 'Acciones',
   markDelivered: 'Marcar Entregado',

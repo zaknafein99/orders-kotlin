@@ -1,41 +1,122 @@
 <template>
-  <div class="customer-search">
+  <div class="customer-search card">
     <div v-if="!isAuthenticated" class="auth-section">
-      <h3>{{ translations.loginToContinue }}</h3>
-      <input
-        v-model="authData.email"
-        type="email"
-        :placeholder="translations.email"
-      />
-      <input
-        v-model="authData.password"
-        type="password"
-        :placeholder="translations.password"
-      />
-      <button @click="login" :disabled="isLoading">{{ isLoading ? translations.loggingIn : translations.login }}</button>
-      <p v-if="authError" class="error">{{ authError }}</p>
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-lock"></i> {{ translations.loginToContinue }}</h3>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">{{ translations.email }}</label>
+        <div class="input-with-icon">
+          <i class="fas fa-envelope"></i>
+          <input
+            id="email"
+            v-model="authData.email"
+            type="email"
+            :placeholder="translations.email"
+          />
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">{{ translations.password }}</label>
+        <div class="input-with-icon">
+          <i class="fas fa-key"></i>
+          <input
+            id="password"
+            v-model="authData.password"
+            type="password"
+            :placeholder="translations.password"
+          />
+        </div>
+      </div>
+      
+      <button @click="login" :disabled="isLoading" class="btn-primary btn-full">
+        <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
+        <i v-else class="fas fa-sign-in-alt"></i>
+        {{ isLoading ? translations.loggingIn : translations.login }}
+      </button>
+      
+      <div v-if="authError" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i> {{ authError }}
+      </div>
     </div>
 
     <div v-if="isAuthenticated" class="search-section">
-      <h3>{{ translations.searchCustomer }}</h3>
-      <div class="search-input-group">
-        <input
-          v-model="phoneNumber"
-          type="text"
-          :placeholder="translations.searchByPhoneNumber"
-        />
-        <button @click="searchCustomer" :disabled="isSearching || !phoneNumber || phoneNumber.length < 3">{{ translations.search }}</button>
+      <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-search"></i> {{ translations.searchCustomer }}</h3>
       </div>
-      <div v-if="isSearching" class="loading-indicator">{{ translations.searching }}</div>
-      <div v-if="searchError" class="error">{{ searchError }}</div>
+      
+      <div class="form-group">
+        <label for="phoneNumber">{{ translations.phoneNumber }}</label>
+        <div class="search-input-group">
+          <div class="input-with-icon">
+            <i class="fas fa-phone"></i>
+            <input
+              id="phoneNumber"
+              v-model="phoneNumber"
+              type="text"
+              :placeholder="translations.searchByPhoneNumber"
+            />
+          </div>
+          <button 
+            @click="searchCustomer" 
+            :disabled="isSearching || !phoneNumber || phoneNumber.length < 3"
+            class="search-btn"
+          >
+            <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
+            <i v-else class="fas fa-search"></i>
+            {{ translations.search }}
+          </button>
+        </div>
+      </div>
+      
+      <div v-if="isSearching" class="loading-state">
+        <div class="spinner"></div>
+        <p>{{ translations.searching }}</p>
+      </div>
+      
+      <div v-if="searchError" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i> {{ searchError }}
+      </div>
 
-      <div v-if="customer" class="customer-details">
-        <h3>{{ customer.name }}</h3>
-        <p><strong>{{ translations.phoneNumber }}:</strong> {{ customer.phoneNumber }}</p>
-        <p><strong>{{ translations.address }}:</strong> {{ customer.address }}</p>
-        <p><strong>Tipo:</strong> {{ customer.type === 'C' ? 'Cliente' : 'Proveedor' }}</p>
-        <p><strong>Estado:</strong> {{ customer.state === 'A' ? 'Activo' : 'Inactivo' }}</p>
-        <button @click="openNewOrderModal" class="new-order-btn">{{ translations.newOrder }}</button>
+      <div v-if="customer" class="customer-details card">
+        <div class="customer-header">
+          <h3><i class="fas fa-user"></i> {{ customer.name }}</h3>
+          <span class="customer-badge" :class="customer.state === 'A' ? 'badge-active' : 'badge-inactive'">
+            {{ customer.state === 'A' ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+        
+        <div class="customer-info">
+          <div class="info-item">
+            <i class="fas fa-phone"></i>
+            <div>
+              <span class="info-label">{{ translations.phoneNumber }}</span>
+              <span class="info-value">{{ customer.phoneNumber }}</span>
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <div>
+              <span class="info-label">{{ translations.address }}</span>
+              <span class="info-value">{{ customer.address }}</span>
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <i class="fas fa-tag"></i>
+            <div>
+              <span class="info-label">Tipo</span>
+              <span class="info-value">{{ customer.type === 'C' ? 'Cliente' : 'Proveedor' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <button @click="openNewOrderModal" class="btn-secondary btn-full new-order-btn">
+          <i class="fas fa-plus-circle"></i> {{ translations.newOrder }}
+        </button>
       </div>
     </div>
 
@@ -225,12 +306,7 @@ onMounted(() => {
 
 <style scoped>
 .customer-search {
-  background-color: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  height: 100%;
 }
 
 .auth-section,
@@ -238,6 +314,26 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-color);
+}
+
+.input-with-icon input {
+  padding-left: 40px;
 }
 
 .customer-details {

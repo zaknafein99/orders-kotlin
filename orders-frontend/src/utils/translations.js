@@ -47,6 +47,9 @@ export const translations = {
   selectTruck: 'Seleccionar Camión',
   truckRequired: 'Se requiere asignar un camión',
   noTruck: 'Sin camión',
+  updating: 'Actualizando',
+  truckUpdated: 'Camión actualizado',
+  errorUpdatingTruck: 'Error al actualizar camión',
   
   // Order creation
   selectItems: 'Seleccionar Items',

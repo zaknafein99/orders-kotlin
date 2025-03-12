@@ -65,4 +65,10 @@ class OrderController(val orderService: OrderService) {
         val response = mapOf("orders" to orders, "dayTotalPrice" to dayTotalPrice)
         return ResponseEntity.ok().body(response)
     }
+    @PostMapping("/{orderId}/truck")
+    @ResponseStatus(HttpStatus.OK)
+    fun assignTruckToOrder(@PathVariable orderId: Int, @RequestBody payload: Map<String, Int>): OrderDTO {
+        val truckId = payload["truckId"] ?: throw IllegalArgumentException("truckId is required")
+        return orderService.assignTruckToOrder(orderId, truckId)
+    }
 }

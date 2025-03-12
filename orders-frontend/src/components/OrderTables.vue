@@ -38,16 +38,20 @@
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
-                <select 
-                  v-if="!order.truck" 
-                  v-model="orderTrucks[order.id]" 
-                  class="truck-select"
-                  @change="onTruckSelected(order.id, orderTrucks[order.id])"
-                >
-                  <option value="">{{ translations.selectTruck }}</option>
-                  <option v-for="truck in availableTrucks" :key="truck.id" :value="truck.id">{{ truck.name }}</option>
-                </select>
-                <span v-else>{{ order.truck.name }}</span>
+                <div class="truck-selection-container">
+                  <select 
+                    v-model="orderTrucks[order.id]" 
+                    class="truck-select"
+                    @change="onTruckSelected(order.id, orderTrucks[order.id])"
+                  >
+                    <option value="">{{ translations.selectTruck }}</option>
+                    <option v-for="truck in availableTrucks" :key="truck.id" :value="String(truck.id)">{{ truck.name }}</option>
+                  </select>
+                  <div v-if="truckUpdateLoading[order.id]" class="loading-indicator">{{ translations.updating }}...</div>
+                  <div v-if="orderTrucks[order.id] && !truckUpdateLoading[order.id]" class="selected-truck-indicator">
+                    {{ getSelectedTruckName(orderTrucks[order.id]) }}
+                  </div>
+                </div>
               </td>
               <td>
                 <button 
@@ -87,7 +91,22 @@
               <td>{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
-              <td>{{ order.truck ? order.truck.name : translations.noTruck }}</td>
+              <td>
+                <div class="truck-selection-container">
+                  <select 
+                    v-model="orderTrucks[order.id]" 
+                    class="truck-select"
+                    @change="onTruckSelected(order.id, orderTrucks[order.id])"
+                  >
+                    <option value="">{{ translations.selectTruck }}</option>
+                    <option v-for="truck in availableTrucks" :key="truck.id" :value="String(truck.id)">{{ truck.name }}</option>
+                  </select>
+                  <div v-if="truckUpdateLoading[order.id]" class="loading-indicator">{{ translations.updating }}...</div>
+                  <div v-if="orderTrucks[order.id] && !truckUpdateLoading[order.id]" class="selected-truck-indicator">
+                    {{ getSelectedTruckName(orderTrucks[order.id]) }}
+                  </div>
+                </div>
+              </td>
               <td>{{ formatDate(order.deliveredAt) }}</td>
             </tr>
           </tbody>
@@ -98,20 +117,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { eventBus } from '../utils/eventBus'
 import OrderService from '../services/OrderService'
+import TruckService from '../services/TruckService'
 import { translations } from '../utils/translations'
 
 // Track truck assignments for orders that don't have one yet
 const orderTrucks = reactive({})
 
+// Track loading state for truck updates
+const truckUpdateLoading = reactive({})
+
 // Available trucks for selection
-const availableTrucks = ref([
-  { id: 1, name: 'Camión 1' },
-  { id: 2, name: 'Camión 2' },
-  { id: 3, name: 'Camión 3' }
-])
+const availableTrucks = ref([])
+const trucksLoading = ref(false)
+const trucksError = ref('')
 
 const pendingOrders = ref([
   {
@@ -153,9 +174,29 @@ const deliveredOrders = ref([
 
 const isLoading = ref(false)
 
+const fetchTrucks = async () => {
+  trucksLoading.value = true
+  trucksError.value = ''
+  try {
+    const trucks = await TruckService.getAllTrucks()
+    availableTrucks.value = trucks
+    console.log('Trucks fetched successfully:', trucks)
+  } catch (error) {
+    console.error('Error fetching trucks:', error)
+    trucksError.value = 'Failed to load trucks'
+  } finally {
+    trucksLoading.value = false
+  }
+}
+
 const fetchOrders = async () => {
   isLoading.value = true
   try {
+    // Fetch trucks first if not already loaded
+    if (availableTrucks.value.length === 0) {
+      await fetchTrucks()
+    }
+    
     // Fetch pending orders using OrderService
     const pendingData = await OrderService.getPendingOrders()
     console.log('Pending orders response:', pendingData)
@@ -189,6 +230,19 @@ const fetchOrders = async () => {
       } : null
     }))
     
+    // Initialize the orderTrucks object with current truck IDs
+    const allOrders = [...pendingOrders.value, ...deliveredOrders.value]
+    allOrders.forEach(order => {
+      if (order.truck) {
+        // Make sure to convert to string for v-model compatibility
+        orderTrucks[order.id] = String(order.truck.id)
+      } else {
+        orderTrucks[order.id] = ''
+      }
+    })
+    
+    console.log('Initialized orderTrucks:', orderTrucks)
+    
     console.log('Orders refreshed successfully')
   } catch (error) {
     console.error('Error fetching orders:', error)
@@ -206,14 +260,43 @@ const formatDate = (date) => {
   })
 }
 
+const getSelectedTruckName = (truckId) => {
+  if (!truckId) return ''
+  const truck = availableTrucks.value.find(t => String(t.id) === String(truckId))
+  return truck ? truck.name : ''
+}
+
 const onTruckSelected = async (orderId, truckId) => {
   if (!truckId) return
   
   try {
     console.log('Truck selected for order:', orderId, 'truck:', truckId)
-    await assignTruckToOrder(orderId, truckId)
+    // Store the previous truck ID in case we need to revert
+    const previousTruckId = orderTrucks[orderId]
+    
+    // Set loading state
+    truckUpdateLoading[orderId] = true
+    
+    // Call the API to update the truck
+    await OrderService.assignTruckToOrder(orderId, truckId)
+    
+    // Update the UI to show the selected truck
+    console.log('Truck updated successfully in UI')
+    
+    // Refresh orders to ensure UI is up to date
+    await fetchOrders()
   } catch (error) {
     console.error('Error handling truck selection:', error)
+    // Reset to previous value on error
+    const order = [...pendingOrders.value, ...deliveredOrders.value].find(o => o.id === orderId)
+    if (order && order.truck) {
+      orderTrucks[orderId] = String(order.truck.id)
+    } else {
+      orderTrucks[orderId] = ''
+    }
+    alert(translations.errorUpdatingTruck)
+  } finally {
+    truckUpdateLoading[orderId] = false
   }
 }
 
@@ -222,16 +305,41 @@ const assignTruckToOrder = async (orderId, truckId) => {
     console.log('Assigning truck to order:', orderId, 'truck:', truckId)
     
     // Call the API to assign the truck
-    await OrderService.assignTruckToOrder(orderId, truckId)
+    const response = await TruckService.updateOrderTruck(orderId, truckId)
+    console.log('API response:', response)
     
-    // Update the local state
-    const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)
-    if (orderIndex !== -1) {
-      const selectedTruck = availableTrucks.value.find(truck => truck.id === truckId)
-      pendingOrders.value[orderIndex].truck = selectedTruck
+    // Update the local state in both pending and delivered orders
+    const selectedTruck = availableTrucks.value.find(truck => truck.id === parseInt(truckId))
+    if (!selectedTruck) {
+      console.error('Selected truck not found in available trucks')
+      return
     }
+    
+    // Ensure orderTrucks is updated with the new value
+    orderTrucks[orderId] = String(truckId)
+    
+    // Check if the order is in pending orders
+    const pendingIndex = pendingOrders.value.findIndex(order => order.id === orderId)
+    if (pendingIndex !== -1) {
+      pendingOrders.value[pendingIndex].truck = {
+        id: selectedTruck.id,
+        name: selectedTruck.name
+      }
+    }
+    
+    // Check if the order is in delivered orders
+    const deliveredIndex = deliveredOrders.value.findIndex(order => order.id === orderId)
+    if (deliveredIndex !== -1) {
+      deliveredOrders.value[deliveredIndex].truck = {
+        id: selectedTruck.id,
+        name: selectedTruck.name
+      }
+    }
+    
+    console.log('Truck assigned successfully')
   } catch (error) {
     console.error('Error assigning truck to order:', error)
+    throw error // Rethrow to handle in the calling function
   }
 }
 
@@ -243,10 +351,16 @@ const markAsDelivered = async (orderId) => {
     const orderIndex = pendingOrders.value.findIndex(order => order.id === orderId)
     if (orderIndex !== -1) {
       const order = pendingOrders.value[orderIndex]
-      if (!order.truck && orderTrucks[orderId]) {
-        const truckId = orderTrucks[orderId]
-        // First assign the truck to the order
-        await assignTruckToOrder(orderId, truckId)
+      
+      // Check if we need to assign a truck first
+      if (orderTrucks[orderId] && (!order.truck || order.truck.id !== parseInt(orderTrucks[orderId]))) {
+        console.log('Assigning truck before marking as delivered')
+        try {
+          await assignTruckToOrder(orderId, orderTrucks[orderId])
+        } catch (error) {
+          console.error('Failed to assign truck before delivery:', error)
+          return // Don't proceed with delivery if truck assignment fails
+        }
       }
     }
     
@@ -259,6 +373,18 @@ const markAsDelivered = async (orderId) => {
       order.deliveredAt = new Date()
       deliveredOrders.value.unshift(order)
       pendingOrders.value.splice(orderIndex, 1)
+      
+      // Make sure the truck selection is preserved in the delivered order
+      if (orderTrucks[orderId]) {
+        const truckId = parseInt(orderTrucks[orderId])
+        const selectedTruck = availableTrucks.value.find(truck => truck.id === truckId)
+        if (selectedTruck) {
+          deliveredOrders.value[0].truck = {
+            id: selectedTruck.id,
+            name: selectedTruck.name
+          }
+        }
+      }
     }
   } catch (error) {
     console.error('Error marking order as delivered:', error)
@@ -390,6 +516,14 @@ th {
   min-width: 150px;
   font-size: 0.9rem;
   background-color: #fff;
+  color: #333;
+  appearance: auto;
+}
+
+.truck-select option {
+  background-color: #fff;
+  color: #333;
+  padding: 8px;
 }
 
 .truck-select:focus {
@@ -402,5 +536,25 @@ th {
   background-color: #ccc;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.loading-indicator {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  font-style: italic;
+  display: block;
+}
+
+.truck-selection-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-truck-indicator {
+  font-size: 13px;
+  color: #42b883;
+  font-weight: bold;
+  margin-top: 4px;
 }
 </style>

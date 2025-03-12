@@ -239,7 +239,15 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
 
-    return axios.post(`/orders/${orderId}/truck`, { truckId }, {
+    // Create a payload with the truck ID
+    const payload = { 
+      truckId: parseInt(truckId)
+    }
+    
+    console.log('Updating truck with payload:', payload)
+    
+    // Use a POST request to update the order with the new truck
+    return axios.post(`/orders/${orderId}/truck`, payload, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -247,11 +255,13 @@ export default {
     })
     .then(response => {
       const updatedOrder = response.data
+      console.log('Truck updated successfully:', updatedOrder)
       // Refresh order tables
       this.refreshOrders(updatedOrder)
       return updatedOrder
     })
     .catch(error => {
+      console.error('Error updating truck:', error.response ? error.response.data : error.message)
       this.handleAuthError(error)
       throw error
     })

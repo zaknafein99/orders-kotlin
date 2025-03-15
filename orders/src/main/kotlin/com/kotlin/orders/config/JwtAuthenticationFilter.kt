@@ -32,7 +32,7 @@ class JwtAuthenticationFilter(
         val jwtToken = authHeader!!.extractTokenValue()
         val email = tokenService.extractEmail(jwtToken)
 
-        if (email != null && SecurityContextHolder.getContext().authentication == null) {
+        if (SecurityContextHolder.getContext().authentication == null) {
             val foundUser = userDetailsService.loadUserByUsername(email)
             if (tokenService.isValid(jwtToken, foundUser)) {
                 updateContext(foundUser, request)

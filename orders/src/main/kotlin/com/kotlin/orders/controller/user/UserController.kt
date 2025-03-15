@@ -37,11 +37,9 @@ class UserController(private val userService: UserService, private val userMappe
     }
 
     @DeleteMapping("/{uuid}")
-    fun deleteByUuid(@PathVariable uuid: UUID) : ResponseEntity<Boolean> {
-        val success = userService.deleteById(uuid)
+    fun deleteByUuid(@PathVariable uuid: UUID): ResponseEntity<Void> {
+        userService.deleteById(uuid)
         return ResponseEntity.ok().build()
-
-
     }
 
     private fun UserRequest.toModel() : User =

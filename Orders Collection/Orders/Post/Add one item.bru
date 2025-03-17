@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: localhost:8080/item
+  url: {{host}}/item
   body: json
   auth: bearer
 }
@@ -16,7 +16,7 @@ headers {
 }
 
 auth:bearer {
-  token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMUBleGFtcGxlLmNvbSIsImlhdCI6MTcwMzUzOTA4NCwiZXhwIjoxNzAzNTQyNjg0fQ.xiD3ZI7MXQSSkZIopmBtM9k2tdys39hxADdhCbA8I5c
+  token: {{token}}
 }
 
 body:json {

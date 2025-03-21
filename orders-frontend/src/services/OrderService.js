@@ -1,7 +1,7 @@
-import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
 import AuthService from './AuthService'
 import { calculateOrderTotal } from '../utils/orderUtils'
+import api from './api'
 
 /**
  * Service for handling order-related API calls and operations
@@ -12,19 +12,24 @@ export default {
    * @returns {Promise} Promise with pending orders data
    */
   getPendingOrders() {
-    const token = AuthService.getToken()
-    if (!token) {
-      eventBus.emit('auth-error')
-      return Promise.reject(new Error('Authentication required'))
-    }
-
-    return axios.get('/orders/pending', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    return api.get('/orders')
+    .then(response => {
+      console.log('Orders API response:', response)
+      console.log('Orders response data:', response.data)
+      if (response.data && response.data.content) {
+        console.log('Orders content found, returning content array')
+        return response.data.content
+      } else {
+        console.log('No content field found in response, returning response data or empty array')
+        return Array.isArray(response.data) ? response.data : []
       }
     })
-    .then(response => response.data)
     .catch(error => {
+      console.error('Error fetching orders:', error)
+      if (error.response) {
+        console.error('Error response data:', error.response.data)
+        console.error('Error response status:', error.response.status)
+      }
       this.handleAuthError(error)
       throw error
     })
@@ -35,19 +40,24 @@ export default {
    * @returns {Promise} Promise with delivered orders data
    */
   getDeliveredOrders() {
-    const token = AuthService.getToken()
-    if (!token) {
-      eventBus.emit('auth-error')
-      return Promise.reject(new Error('Authentication required'))
-    }
-
-    return axios.get('/orders/delivered', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+    return api.get('/orders/delivered')
+    .then(response => {
+      console.log('Delivered orders API response:', response)
+      console.log('Delivered orders response data:', response.data)
+      if (response.data && response.data.content) {
+        console.log('Delivered orders content found, returning content array')
+        return response.data.content
+      } else {
+        console.log('No content field found in delivered response, returning response data or empty array')
+        return Array.isArray(response.data) ? response.data : []
       }
     })
-    .then(response => response.data)
     .catch(error => {
+      console.error('Error fetching delivered orders:', error)
+      if (error.response) {
+        console.error('Error response data:', error.response.data)
+        console.error('Error response status:', error.response.status)
+      }
       this.handleAuthError(error)
       throw error
     })
@@ -66,7 +76,7 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
 
-    return axios.get(`/item/list?page=${page}&size=${size}&order=id,asc`, {
+    return api.get(`/item/list?page=${page}&size=${size}&order=id,asc`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -233,12 +243,8 @@ export default {
    * @returns {Promise} Promise with updated order data
    */
   assignTruckToOrder(orderId, truckId) {
-    const token = AuthService.getToken()
-    if (!token) {
-      eventBus.emit('auth-error')
-      return Promise.reject(new Error('Authentication required'))
-    }
-
+    console.log(`Assigning truck ${truckId} to order ${orderId}`)
+    
     // Create a payload with the truck ID
     const payload = { 
       truckId: parseInt(truckId)
@@ -247,24 +253,19 @@ export default {
     console.log('Updating truck with payload:', payload)
     
     // Use a POST request to update the order with the new truck
-    return axios.post(`/orders/${orderId}/truck`, payload, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => {
-      const updatedOrder = response.data
-      console.log('Truck updated successfully:', updatedOrder)
-      // Refresh order tables
-      this.refreshOrders(updatedOrder)
-      return updatedOrder
-    })
-    .catch(error => {
-      console.error('Error updating truck:', error.response ? error.response.data : error.message)
-      this.handleAuthError(error)
-      throw error
-    })
+    return api.post(`/orders/${orderId}/truck`, payload)
+      .then(response => {
+        console.log('Truck updated successfully:', response.data)
+        const updatedOrder = response.data
+        // Refresh order tables
+        this.refreshOrders(updatedOrder)
+        return updatedOrder
+      })
+      .catch(error => {
+        console.error('Error updating truck:', error.response ? error.response.data : error.message)
+        this.handleAuthError(error)
+        throw error
+      })
   },
 
   /**
@@ -274,30 +275,24 @@ export default {
    * @returns {Promise} Promise with updated order data
    */
   markOrderAsDelivered(orderId, truckId = null) {
-    const token = AuthService.getToken()
-    if (!token) {
-      eventBus.emit('auth-error')
-      return Promise.reject(new Error('Authentication required'))
-    }
-
-    const payload = truckId ? { truckId } : {}
+    console.log(`Marking order ${orderId} as delivered${truckId ? ` with truck ${truckId}` : ''}`)
     
-    return axios.post(`/orders/${orderId}/deliver`, payload, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => {
-      const updatedOrder = response.data
-      // Refresh order tables
-      this.refreshOrders(updatedOrder)
-      return updatedOrder
-    })
-    .catch(error => {
-      this.handleAuthError(error)
-      throw error
-    })
+    // The backend endpoint doesn't accept a payload, it just needs the orderId in the URL
+    // If we need to assign a truck, we should do that first in a separate call
+    
+    return api.post(`/orders/${orderId}/deliver`)
+      .then(response => {
+        console.log('Order marked as delivered successfully:', response.data)
+        const updatedOrder = response.data
+        // Refresh order tables
+        this.refreshOrders(updatedOrder)
+        return updatedOrder
+      })
+      .catch(error => {
+        console.error('Error marking order as delivered:', error.response ? error.response.data : error.message)
+        this.handleAuthError(error)
+        throw error
+      })
   },
 
   /**

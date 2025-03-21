@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': '/home/isma/repos/orders-kotlin/orders-frontend/src'
+      '@': '/workspaces/orders-kotlin/orders-frontend/src'
     }
   },
   server: {

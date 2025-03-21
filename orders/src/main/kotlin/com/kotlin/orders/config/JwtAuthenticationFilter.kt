@@ -38,8 +38,8 @@ class JwtAuthenticationFilter(
                 updateContext(foundUser, request)
             }
 
-            filterChain.doFilter(request, response)
         }
+        filterChain.doFilter(request, response)
     }
 
     private fun updateContext(foundUser: UserDetails, request: HttpServletRequest) {

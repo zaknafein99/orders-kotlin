@@ -136,44 +136,8 @@ const availableTrucks = ref([])
 const trucksLoading = ref(false)
 const trucksError = ref('')
 
-const pendingOrders = ref([
-  {
-    id: 1001,
-    customerName: 'John Doe',
-    createdAt: new Date(2025, 2, 10),
-    items: [
-      { name: 'Pizza', price: 12.99 },
-      { name: 'Soda', price: 2.49 }
-    ],
-    total: 15.48
-  },
-  {
-    id: 1002,
-    customerName: 'Jane Smith',
-    createdAt: new Date(2025, 2, 11),
-    items: [
-      { name: 'Burger', price: 8.99 },
-      { name: 'Fries', price: 3.99 },
-      { name: 'Soda', price: 2.49 }
-    ],
-    total: 15.47
-  }
-])
-
-const deliveredOrders = ref([
-  {
-    id: 1000,
-    customerName: 'Alice Johnson',
-    createdAt: new Date(2025, 2, 9),
-    deliveredAt: new Date(2025, 2, 9),
-    items: [
-      { name: 'Salad', price: 6.99 },
-      { name: 'Pasta', price: 10.99 }
-    ],
-    total: 17.98
-  }
-])
-
+const pendingOrders = ref([])
+const deliveredOrders = ref([])
 const isLoading = ref(false)
 
 const fetchTrucks = async () => {
@@ -191,46 +155,79 @@ const fetchTrucks = async () => {
   }
 }
 
+const checkToken = () => {
+  const token = localStorage.getItem('token')
+  console.log('Current token in localStorage:', token ? `${token.substring(0, 15)}...` : 'No token')
+  return token
+}
+
 const fetchOrders = async () => {
   isLoading.value = true
+  console.log('Starting to fetch orders...')
+  
+  // Check if we have a token
+  const token = checkToken()
+  if (!token) {
+    console.error('No token found in localStorage, cannot fetch orders')
+    return
+  }
   try {
     // Fetch trucks first if not already loaded
     if (availableTrucks.value.length === 0) {
+      console.log('No trucks loaded, fetching trucks first...')
       await fetchTrucks()
     }
     
     // Fetch pending orders using OrderService
+    console.log('Fetching pending orders...')
     const pendingData = await OrderService.getPendingOrders()
-    console.log('Pending orders response:', pendingData)
+    console.log('Pending orders response:', pendingData, 'Type:', typeof pendingData, 'Is Array:', Array.isArray(pendingData), 'Length:', pendingData ? pendingData.length : 0)
     
-    pendingOrders.value = pendingData.map(order => ({
-      id: order.id,
-      customerName: order.customer.name,
-      createdAt: new Date(order.date),
-      items: order.items,
-      total: order.totalPrice,
-      truck: order.truck ? {
-        id: order.truck.id,
-        name: order.truck.name
-      } : null
-    }))
+    if (!pendingData || !Array.isArray(pendingData) || pendingData.length === 0) {
+      console.warn('No pending orders data received or data is not an array')
+      pendingOrders.value = []
+    } else {
+      console.log('Mapping pending orders data...')
+      console.log('First order sample:', pendingData[0])
+      
+      pendingOrders.value = pendingData.map(order => ({
+        id: order.id,
+        customerName: order.customer.name,
+        createdAt: new Date(order.date),
+        items: order.items,
+        total: order.totalPrice,
+        truck: order.truck ? {
+          id: order.truck.id,
+          name: order.truck.name
+        } : null
+      }))
+    }
     
     // Fetch delivered orders using OrderService
+    console.log('Fetching delivered orders...')
     const deliveredData = await OrderService.getDeliveredOrders()
-    console.log('Delivered orders response:', deliveredData)
+    console.log('Delivered orders response:', deliveredData, 'Type:', typeof deliveredData, 'Is Array:', Array.isArray(deliveredData), 'Length:', deliveredData ? deliveredData.length : 0)
     
-    deliveredOrders.value = deliveredData.map(order => ({
-      id: order.id,
-      customerName: order.customer.name,
-      createdAt: new Date(order.date),
-      items: order.items,
-      deliveredAt: new Date(order.date), // Using same date since backend doesn't have delivery date
-      total: order.totalPrice,
-      truck: order.truck ? {
-        id: order.truck.id,
-        name: order.truck.name
-      } : null
-    }))
+    if (!deliveredData || !Array.isArray(deliveredData) || deliveredData.length === 0) {
+      console.warn('No delivered orders data received or data is not an array')
+      deliveredOrders.value = []
+    } else {
+      console.log('Mapping delivered orders data...')
+      console.log('First delivered order sample:', deliveredData[0])
+      
+      deliveredOrders.value = deliveredData.map(order => ({
+        id: order.id,
+        customerName: order.customer.name,
+        createdAt: new Date(order.date),
+        items: order.items,
+        deliveredAt: new Date(order.date), // Using same date since backend doesn't have delivery date
+        total: order.totalPrice,
+        truck: order.truck ? {
+          id: order.truck.id,
+          name: order.truck.name
+        } : null
+      }))
+    }
     
     // Initialize the orderTrucks object with current truck IDs
     const allOrders = [...pendingOrders.value, ...deliveredOrders.value]
@@ -248,8 +245,19 @@ const fetchOrders = async () => {
     console.log('Orders refreshed successfully')
   } catch (error) {
     console.error('Error fetching orders:', error)
+    if (error.response) {
+      console.error('Error response data:', error.response.data)
+      console.error('Error response status:', error.response.status)
+      console.error('Error response headers:', error.response.headers)
+    } else if (error.request) {
+      console.error('Error request:', error.request)
+    } else {
+      console.error('Error message:', error.message)
+    }
+    console.error('Error config:', error.config)
   } finally {
     isLoading.value = false
+    console.log('Fetch orders completed, loading state set to false')
   }
 }
 
@@ -341,6 +349,16 @@ const assignTruckToOrder = async (orderId, truckId) => {
     console.log('Truck assigned successfully')
   } catch (error) {
     console.error('Error assigning truck to order:', error)
+    if (error.response) {
+      console.error('Error response data:', error.response.data)
+      console.error('Error response status:', error.response.status)
+      console.error('Error response headers:', error.response.headers)
+    } else if (error.request) {
+      console.error('Error request:', error.request)
+    } else {
+      console.error('Error message:', error.message)
+    }
+    console.error('Error config:', error.config)
     throw error // Rethrow to handle in the calling function
   }
 }
@@ -390,6 +408,16 @@ const markAsDelivered = async (orderId) => {
     }
   } catch (error) {
     console.error('Error marking order as delivered:', error)
+    if (error.response) {
+      console.error('Error response data:', error.response.data)
+      console.error('Error response status:', error.response.status)
+      console.error('Error response headers:', error.response.headers)
+    } else if (error.request) {
+      console.error('Error request:', error.request)
+    } else {
+      console.error('Error message:', error.message)
+    }
+    console.error('Error config:', error.config)
   }
 }
 
@@ -510,14 +538,14 @@ th, td {
 }
 
 th {
-  background-color: var(--dark-color);
-  color: white;
+  background-color: #1e293b;
+  color: #f8fafc;
   font-weight: 600;
-  font-size: var(--table-header-font-size);
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.2px;
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 tr:nth-child(even) {

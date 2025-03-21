@@ -1,4 +1,4 @@
-import axios from 'axios'
+import api from './api'
 import { eventBus } from '../utils/eventBus'
 
 export default {
@@ -9,28 +9,43 @@ export default {
    * @returns {Promise} Promise with login result
    */
   login(email, password) {
-    return axios.post('/auth', { email, password })
+    console.log('Attempting login with email:', email)
+    return api.post('/auth', { email, password })
       .then(response => {
+        console.log('Login response:', response)
         const { accessToken } = response.data
         
-        console.log(`Received token from server: ${accessToken.substring(0, 15)}...`)
+        console.log('Full response data:', response.data)
         
-        // Store token in localStorage exactly as received
+        if (!accessToken) {
+          console.error('No access token found in response!')
+          console.error('Response data:', response.data)
+          throw new Error('No access token found in response')
+        }
+        
+        console.log(`Received token: ${accessToken.substring(0, 15)}...`)
+        
+        // Store token in localStorage
         localStorage.setItem('token', accessToken)
+        console.log('Token stored in localStorage')
         
-        // Optionally store credentials for token refresh (encrypted in a real app)
-        localStorage.setItem('userEmail', email)
-        localStorage.setItem('userPassword', password)
-        
-        // Set the token in axios default headers - use exact token without modification
-        const authHeader = `Bearer ${accessToken}`
-        axios.defaults.headers.common['Authorization'] = authHeader
-        console.log(`Set Authorization header: ${authHeader.substring(0, 20)}...`)
+        // Set the token in axios default headers
+        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+        console.log('Token set in axios default headers')
         
         // Emit login success event
-        eventBus.emit('login-success', accessToken)
+        eventBus.emit('login-success')
+        console.log('Login success event emitted')
         
         return accessToken
+      })
+      .catch(error => {
+        console.error('Login error:', error)
+        if (error.response) {
+          console.error('Error response data:', error.response.data)
+          console.error('Error response status:', error.response.status)
+        }
+        throw error
       })
   },
 
@@ -44,7 +59,7 @@ export default {
     localStorage.removeItem('userPassword')
     
     // Clear authorization header
-    delete axios.defaults.headers.common['Authorization']
+    delete api.defaults.headers.common['Authorization']
     
     // Emit logout event
     eventBus.emit('logout')

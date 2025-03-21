@@ -8,7 +8,7 @@ spring:
 #    password: password
 # connect to database orders in PostgresSQL with password root
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://192.168.1.7:5432/orders
+    url: jdbc:postgresql://100.88.179.96:5432/orders
     username: postgres
     password: postgres
   jpa:
@@ -18,6 +18,10 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+server:
+  address: 0.0.0.0
+  port: 8080
+
   h2:
     console:
       enabled: true

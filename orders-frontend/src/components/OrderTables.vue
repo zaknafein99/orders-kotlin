@@ -14,7 +14,7 @@
 
     <div v-else>
       <div class="table-section">
-        <h3><i class="fas fa-clock"></i> {{ translations.pendingOrders }}</h3>
+        <h3><i class="fas fa-clock"></i> Pedidos Pendientes</h3>
         <div v-if="pendingOrders.length === 0" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
@@ -22,9 +22,8 @@
         <table v-else>
           <thead>
             <tr>
-              <th>{{ translations.orderID }}</th>
+              <th class="date-column">{{ translations.createdAt }}</th>
               <th>{{ translations.customer }}</th>
-              <th>{{ translations.createdAt }}</th>
               <th>{{ translations.itemCount }}</th>
               <th>{{ translations.total }}</th>
               <th>{{ translations.truck }}</th>
@@ -33,9 +32,8 @@
           </thead>
           <tbody>
             <tr v-for="order in pendingOrders" :key="order.id">
-              <td>#{{ order.id }}</td>
+              <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.customerName }}</td>
-              <td>{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
@@ -69,7 +67,7 @@
       </div>
 
       <div class="table-section">
-        <h3><i class="fas fa-check-circle"></i> {{ translations.deliveredOrders }}</h3>
+        <h3><i class="fas fa-truck"></i> Pedidos Entregados</h3>
         <div v-if="deliveredOrders.length === 0" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
@@ -77,20 +75,18 @@
         <table v-else>
           <thead>
             <tr>
-              <th>{{ translations.orderID }}</th>
+              <th class="date-column">{{ translations.createdAt }}</th>
               <th>{{ translations.customer }}</th>
-              <th>{{ translations.createdAt }}</th>
               <th>{{ translations.itemCount }}</th>
               <th>{{ translations.total }}</th>
               <th>{{ translations.truck }}</th>
-              <th>{{ translations.deliveredAt }}</th>
+              <th class="date-column">{{ translations.deliveredAt }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="order in deliveredOrders" :key="order.id">
-              <td>#{{ order.id }}</td>
+              <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.customerName }}</td>
-              <td>{{ formatDate(order.createdAt) }}</td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
@@ -201,6 +197,9 @@ const fetchOrders = async () => {
           name: order.truck.name
         } : null
       }))
+      
+      // Sort pending orders by date, newest first
+      pendingOrders.value.sort((a, b) => b.createdAt - a.createdAt)
     }
     
     // Fetch delivered orders using OrderService
@@ -215,7 +214,22 @@ const fetchOrders = async () => {
       console.log('Mapping delivered orders data...')
       console.log('First delivered order sample:', deliveredData[0])
       
-      deliveredOrders.value = deliveredData.map(order => ({
+      // Create a set of pending order IDs for quick lookup
+      const pendingOrderIds = new Set(pendingOrders.value.map(order => order.id))
+      console.log('Pending order IDs:', Array.from(pendingOrderIds))
+      
+      // Filter out any delivered orders that are also in pending orders
+      const filteredDeliveredData = deliveredData.filter(order => {
+        const isDuplicate = pendingOrderIds.has(order.id)
+        if (isDuplicate) {
+          console.log(`Order ID ${order.id} appears in both pending and delivered lists, excluding from delivered list`)
+        }
+        return !isDuplicate
+      })
+      
+      console.log(`Filtered out ${deliveredData.length - filteredDeliveredData.length} duplicate orders from delivered list`)
+      
+      deliveredOrders.value = filteredDeliveredData.map(order => ({
         id: order.id,
         customerName: order.customer.name,
         createdAt: new Date(order.date),
@@ -227,6 +241,9 @@ const fetchOrders = async () => {
           name: order.truck.name
         } : null
       }))
+      
+      // Sort delivered orders by date, newest first
+      deliveredOrders.value.sort((a, b) => b.createdAt - a.createdAt)
     }
     
     // Initialize the orderTrucks object with current truck IDs
@@ -391,7 +408,17 @@ const markAsDelivered = async (orderId) => {
     if (orderIndex !== -1) {
       const order = {...pendingOrders.value[orderIndex]}
       order.deliveredAt = new Date()
-      deliveredOrders.value.unshift(order)
+      
+      // Check if this order already exists in the delivered orders list
+      const existingDeliveredIndex = deliveredOrders.value.findIndex(o => o.id === order.id)
+      if (existingDeliveredIndex !== -1) {
+        console.log(`Order ID ${order.id} already exists in delivered orders, updating instead of adding`)
+        deliveredOrders.value[existingDeliveredIndex] = order
+      } else {
+        deliveredOrders.value.unshift(order)
+      }
+      
+      // Remove from pending orders
       pendingOrders.value.splice(orderIndex, 1)
       
       // Make sure the truck selection is preserved in the delivered order
@@ -399,7 +426,9 @@ const markAsDelivered = async (orderId) => {
         const truckId = parseInt(orderTrucks[orderId])
         const selectedTruck = availableTrucks.value.find(truck => truck.id === truckId)
         if (selectedTruck) {
-          deliveredOrders.value[0].truck = {
+          // Find the order in the delivered list (it might be at index 0 or at existingDeliveredIndex)
+          const deliveredOrderIndex = existingDeliveredIndex !== -1 ? existingDeliveredIndex : 0
+          deliveredOrders.value[deliveredOrderIndex].truck = {
             id: selectedTruck.id,
             name: selectedTruck.name
           }
@@ -527,14 +556,35 @@ table {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.date-cell {
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  white-space: normal !important;
+}
+
 th, td {
-  padding: 0.2rem 0.3rem;
+  padding: 0.5rem 0.5rem;
   text-align: left;
   border-bottom: 1px solid #eee;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.1;
+  line-height: 1.3;
+}
+
+.date-column {
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+}
+
+td:first-child {
+  font-weight: 500;
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  white-space: normal !important;
 }
 
 th {

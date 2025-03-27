@@ -12,23 +12,74 @@ export default {
    * @returns {Promise} Promise with pending orders data
    */
   getPendingOrders() {
-    return api.get('/orders')
-    .then(response => {
-      console.log('Orders API response:', response)
-      console.log('Orders response data:', response.data)
-      if (response.data && response.data.content) {
-        console.log('Orders content found, returning content array')
-        return response.data.content
-      } else {
-        console.log('No content field found in response, returning response data or empty array')
-        return Array.isArray(response.data) ? response.data : []
+    console.log('Fetching pending orders from API')
+    const token = localStorage.getItem('token')
+    console.log('Using token for orders request:', token ? `${token.substring(0, 15)}...` : 'No token')
+    
+    // Log the exact request we're making to compare with the curl command
+    console.log('Making request to: /orders with Authorization: Bearer ' + (token ? token.substring(0, 15) + '...' : 'No token'))
+    
+    // Use a query parameter to only get pending orders
+    return api.get('/orders?status=PENDING', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
+    })
+    .then(response => {
+      console.log('Orders API response status:', response.status)
+      console.log('Orders response data type:', typeof response.data)
+      console.log('Orders response full data:', JSON.stringify(response.data, null, 2))
+      
+      let ordersData = [];
+      
+      if (response.data && response.data.content) {
+        console.log('Orders content found, returning content array with length:', response.data.content.length)
+        ordersData = response.data.content;
+      } else if (Array.isArray(response.data)) {
+        console.log('Response data is an array, returning directly with length:', response.data.length)
+        ordersData = response.data;
+      } else {
+        console.log('Response data is not in expected format, attempting to parse')
+        // Try to handle different response formats
+        if (response.data && typeof response.data === 'object') {
+          // If it's an object but not with a content property, it might be a single order or have a different structure
+          const possibleArrays = Object.values(response.data).filter(val => Array.isArray(val))
+          if (possibleArrays.length > 0) {
+            console.log('Found array in response object, using first array with length:', possibleArrays[0].length)
+            ordersData = possibleArrays[0];
+          }
+          
+          // If it looks like a single order, wrap it in an array
+          else if (response.data.id && response.data.customer) {
+            console.log('Response appears to be a single order, wrapping in array')
+            ordersData = [response.data];
+          }
+        }
+      }
+      
+      // Filter out any orders that have status 'DELIVERED'
+      const pendingOrders = ordersData.filter(order => {
+        const isDelivered = order.status === 'DELIVERED';
+        if (isDelivered) {
+          console.log(`Order ID ${order.id} has status DELIVERED, filtering out from pending orders`);
+        }
+        return !isDelivered;
+      });
+      
+      console.log(`Filtered out ${ordersData.length - pendingOrders.length} delivered orders from pending list`);
+      return pendingOrders;
     })
     .catch(error => {
       console.error('Error fetching orders:', error)
       if (error.response) {
         console.error('Error response data:', error.response.data)
         console.error('Error response status:', error.response.status)
+        console.error('Error response headers:', error.response.headers)
+      } else if (error.request) {
+        console.error('No response received:', error.request)
+      } else {
+        console.error('Error message:', error.message)
       }
       this.handleAuthError(error)
       throw error
@@ -40,16 +91,48 @@ export default {
    * @returns {Promise} Promise with delivered orders data
    */
   getDeliveredOrders() {
-    return api.get('/orders/delivered')
+    console.log('Fetching delivered orders from API')
+    const token = localStorage.getItem('token')
+    console.log('Using token for delivered orders request:', token ? `${token.substring(0, 15)}...` : 'No token')
+    
+    // Use a query parameter to specifically request delivered orders
+    return api.get('/orders?status=DELIVERED', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
     .then(response => {
-      console.log('Delivered orders API response:', response)
-      console.log('Delivered orders response data:', response.data)
+      console.log('Delivered orders API response status:', response.status)
+      console.log('Delivered orders response data type:', typeof response.data)
+      console.log('Delivered orders response full data:', JSON.stringify(response.data, null, 2))
+      
       if (response.data && response.data.content) {
-        console.log('Delivered orders content found, returning content array')
+        console.log('Delivered orders content found, returning content array with length:', response.data.content.length)
         return response.data.content
+      } else if (Array.isArray(response.data)) {
+        console.log('Delivered orders response data is an array, returning directly with length:', response.data.length)
+        return response.data
       } else {
-        console.log('No content field found in delivered response, returning response data or empty array')
-        return Array.isArray(response.data) ? response.data : []
+        console.log('Delivered orders response data is not in expected format, attempting to parse')
+        // Try to handle different response formats
+        if (response.data && typeof response.data === 'object') {
+          // If it's an object but not with a content property, it might be a single order or have a different structure
+          const possibleArrays = Object.values(response.data).filter(val => Array.isArray(val))
+          if (possibleArrays.length > 0) {
+            console.log('Found array in delivered orders response object, using first array with length:', possibleArrays[0].length)
+            return possibleArrays[0]
+          }
+          
+          // If it looks like a single order, wrap it in an array
+          if (response.data.id && response.data.customer) {
+            console.log('Delivered orders response appears to be a single order, wrapping in array')
+            return [response.data]
+          }
+        }
+        
+        console.warn('Could not find delivered orders data in response, returning empty array')
+        return []
       }
     })
     .catch(error => {
@@ -57,6 +140,11 @@ export default {
       if (error.response) {
         console.error('Error response data:', error.response.data)
         console.error('Error response status:', error.response.status)
+        console.error('Error response headers:', error.response.headers)
+      } else if (error.request) {
+        console.error('No response received for delivered orders:', error.request)
+      } else {
+        console.error('Error message for delivered orders:', error.message)
       }
       this.handleAuthError(error)
       throw error
@@ -106,10 +194,8 @@ export default {
     console.log('Sending order data to API:', JSON.stringify(orderData, null, 2))
     console.log('Using token:', token.substring(0, 15) + '...')
     
-    // Make sure axios has the token in its default headers
     // Use the exact token without any modifications
     const authHeader = `Bearer ${token}`
-    axios.defaults.headers.common['Authorization'] = authHeader
     console.log(`Authorization header set: ${authHeader.substring(0, 20)}...`)
 
     // Create a complete version of the order data that matches exactly what the backend expects
@@ -146,7 +232,16 @@ export default {
     console.log('Simplified order data for API:', JSON.stringify(apiOrderData, null, 2))
 
     // Make sure the data is properly formatted as a JSON string
-    return axios.post('/orders', apiOrderData, {
+    console.log('=== ORDER CREATION REQUEST ===');
+    console.log('URL: /orders');
+    console.log('Method: POST');
+    console.log('Headers:', {
+      'Authorization': authHeader.substring(0, 20) + '...',
+      'Content-Type': 'application/json'
+    });
+    console.log('Request Body:', JSON.stringify(apiOrderData, null, 2));
+    
+    return api.post('/orders', apiOrderData, {
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json'
@@ -159,8 +254,14 @@ export default {
       }
     })
     .then(response => {
+      console.log('=== ORDER CREATION RESPONSE ===');
+      console.log('Status:', response.status);
+      console.log('Headers:', response.headers);
+      console.log('Data:', JSON.stringify(response.data, null, 2));
+      
       const createdOrder = response.data
-      console.log('Order created successfully:', createdOrder)
+      console.log('Order created successfully with ID:', createdOrder.id);
+      
       // Refresh order tables
       this.refreshOrders(createdOrder)
       return createdOrder
@@ -277,22 +378,40 @@ export default {
   markOrderAsDelivered(orderId, truckId = null) {
     console.log(`Marking order ${orderId} as delivered${truckId ? ` with truck ${truckId}` : ''}`)
     
+    // Get the token for authorization
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('No authentication token found')
+      eventBus.emit('auth-error')
+      return Promise.reject(new Error('Authentication required'))
+    }
+    
+    console.log('Using token for deliver request:', token ? `${token.substring(0, 15)}...` : 'No token')
+    
     // The backend endpoint doesn't accept a payload, it just needs the orderId in the URL
     // If we need to assign a truck, we should do that first in a separate call
     
-    return api.post(`/orders/${orderId}/deliver`)
-      .then(response => {
-        console.log('Order marked as delivered successfully:', response.data)
-        const updatedOrder = response.data
-        // Refresh order tables
+    return api.post(`/orders/${orderId}/deliver`, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      console.log('Order marked as delivered successfully:', response.data)
+      const updatedOrder = response.data
+      // Refresh order tables with a slightly longer delay for delivery
+      setTimeout(() => {
+        console.log('Refreshing orders after delivery')
         this.refreshOrders(updatedOrder)
-        return updatedOrder
-      })
-      .catch(error => {
-        console.error('Error marking order as delivered:', error.response ? error.response.data : error.message)
-        this.handleAuthError(error)
-        throw error
-      })
+      }, 800) // Slightly longer delay for delivery operations
+      return updatedOrder
+    })
+    .catch(error => {
+      console.error('Error marking order as delivered:', error.response ? error.response.data : error.message)
+      this.handleAuthError(error)
+      throw error
+    })
   },
 
   /**
@@ -372,7 +491,38 @@ export default {
    * @param {Object} order Optional order object that was just created or updated
    */
   refreshOrders(order = null) {
-    console.log('Refreshing orders tables')
-    eventBus.emit('order-submitted', order)
+    console.log('Refreshing orders tables with new order ID:', order?.id)
+    // Force a small delay to ensure the backend has processed the order
+    setTimeout(() => {
+      console.log('Emitting order-submitted event to refresh tables')
+      eventBus.emit('order-submitted', order)
+    }, 500) // 500ms delay to ensure backend processing is complete
+  },
+  
+  /**
+   * Handle authentication errors
+   * @param {Error} error The error object from the API call
+   */
+  handleAuthError(error) {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      console.warn('Authentication error detected, attempting to handle')
+      
+      // Get the current token
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No token found in localStorage')
+        eventBus.emit('auth-error')
+        return
+      }
+      
+      console.log('Current token:', token.substring(0, 15) + '...')
+      console.log('Attempting to refresh authentication before logging out')
+      
+      // Try to refresh the token if the backend supports it
+      // For now, we'll just clear the token and emit the auth error
+      // This could be enhanced to use a refresh token if available
+      localStorage.removeItem('token')
+      eventBus.emit('auth-error')
+    }
   }
 }

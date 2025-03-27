@@ -236,9 +236,10 @@ const searchCustomer = async () => {
   try {
       console.log('Searching for customer with phone:', phoneNumber.value)
       
-      // Make sure we're using the correct API endpoint with the /api prefix
+      // The proxy is configured to rewrite /api to the root path
+      // We should NOT include /api twice in the URL
       const response = await axios.get(
-        `/api/customer/by-phone/${phoneNumber.value}?size=5&page=0`
+        `/customer/by-phone/${phoneNumber.value}?size=5&page=0`
       )
       
       console.log('Customer search response:', response.data)

@@ -49,20 +49,20 @@
       
       <div class="form-group">
         <label for="phoneNumber">{{ translations.phoneNumber }}</label>
-        <div class="search-input-group">
-          <div class="input-with-icon">
-            <i class="fas fa-phone"></i>
-            <input
-              id="phoneNumber"
-              v-model="phoneNumber"
-              type="text"
-              :placeholder="translations.searchByPhoneNumber"
-            />
-          </div>
+        <div class="input-with-icon">
+          <i class="fas fa-phone"></i>
+          <input
+            id="phoneNumber"
+            v-model="phoneNumber"
+            type="text"
+            :placeholder="translations.searchByPhoneNumber"
+          />
+        </div>
+        <div class="search-button-container">
           <button 
             @click="searchCustomer" 
             :disabled="isSearching || !phoneNumber || phoneNumber.length < 3"
-            class="search-btn"
+            class="btn-primary search-btn"
           >
             <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-search"></i>
@@ -236,10 +236,9 @@ const searchCustomer = async () => {
   try {
       console.log('Searching for customer with phone:', phoneNumber.value)
       
-      // Notice: axios.defaults.baseURL is already set to '/api' in main.js
-      // So this will be sent as /api/customer/by-phone/... and vite proxy will rewrite to /customer/by-phone/...
+      // Make sure we're using the correct API endpoint with the /api prefix
       const response = await axios.get(
-        `/customer/by-phone/${phoneNumber.value}?size=5&page=0`
+        `/api/customer/by-phone/${phoneNumber.value}?size=5&page=0`
       )
       
       console.log('Customer search response:', response.data)
@@ -294,6 +293,8 @@ onMounted(() => {
 <style scoped>
 .customer-search {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .auth-section,
@@ -328,7 +329,10 @@ onMounted(() => {
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 6px;
-  border-left: 4px solid #42b883;
+  border-left: 4px solid var(--primary-color);
+  max-width: 100%;
+  overflow-x: hidden;
+  word-wrap: break-word;
 }
 
 .new-order-btn {
@@ -349,23 +353,29 @@ onMounted(() => {
   font-style: italic;
 }
 
-.search-input-group {
+.search-button-container {
+  margin-top: 1rem;
   display: flex;
-  gap: 0.5rem;
+  justify-content: center;
+  width: 100%;
 }
 
-.search-input-group input {
-  flex-grow: 1;
-}
-
-.search-input-group button {
+.search-btn {
   white-space: nowrap;
-  background-color: #42b883;
+  background-color: var(--primary-color);
   border: none;
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   border-radius: 4px;
   cursor: pointer;
+  min-width: 80%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .search-input-group button:disabled {

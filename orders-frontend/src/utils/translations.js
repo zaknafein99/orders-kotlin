@@ -188,7 +188,6 @@ export const messages = {
     unexpectedError: 'Error inesperado',
     authError: 'Error de autenticación. Por favor, inicia sesión nuevamente'
   },
-  
   en: {
     // App header and general
     appTitle: 'Orders Management',
@@ -196,25 +195,21 @@ export const messages = {
     ordersManagementSystem: 'Orders Management System',
     loading: 'Loading...',
     refresh: 'Refresh',
+    login: 'Login',
+    logout: 'Log out',
+    profile: 'Profile',
+    dashboard: 'Dashboard',
+    customers: 'Customers',
+    orders: 'Orders',
+    error: 'Error',
+    success: 'Success',
     save: 'Save',
     delete: 'Delete',
     edit: 'Edit',
     view: 'View',
     back: 'Back',
-
-    // Authentication
-    login: 'Log in',
-    loggingIn: 'Logging in...',
-    email: 'Email',
-    password: 'Password',
-    loginToContinue: 'Log in to continue',
-    loginFailed: 'Login failed',
-    authRequired: 'Authentication required',
-    logout: 'Log out',
-    profile: 'Profile',
-
+    
     // Dashboard
-    dashboard: 'Dashboard',
     statistics: 'Statistics',
     recentOrders: 'Recent Orders',
     ordersTrend: 'Orders Trend',

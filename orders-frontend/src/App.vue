@@ -3,9 +3,18 @@ import { onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AuthService from './services/AuthService'
 
+// Log that App.vue is being rendered
+console.log('App.vue is being rendered')
+
 onMounted(() => {
   // Initialize authentication state when the app starts
-  AuthService.initAuth()
+  console.log('App.vue onMounted hook triggered')
+  try {
+    AuthService.initAuth()
+    console.log('AuthService.initAuth() completed successfully')
+  } catch (error) {
+    console.error('Error in AuthService.initAuth():', error)
+  }
 })
 
 const route = useRoute()
@@ -17,6 +26,8 @@ const showLayout = computed(() => {
 </script>
 
 <template>
+  
+  
   <!-- Login page doesn't use the layout -->
   <router-view v-if="!showLayout" />
   

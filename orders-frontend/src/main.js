@@ -26,16 +26,11 @@ app.use(pinia)
 app.use(router)
 app.use(i18n)
 
-// Mount app
-app.mount('#app')
+// Add Google Font
+const fontLink = document.createElement('link')
 fontLink.rel = 'stylesheet'
 fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
 document.head.appendChild(fontLink)
-
-// Use plugins
-app.use(router)
-app.use(i18n)
-app.use(pinia)
 
 // Set base URL for API requests
 // This means all axios requests will be prefixed with '/api'
@@ -121,4 +116,15 @@ axios.interceptors.response.use(response => {
   return Promise.reject(error)
 })
 
+// Add global error handler
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Vue Error:', err)
+  console.error('Error Info:', info)
+  console.error('Component:', instance)
+}
+
+// Mount the app
 app.mount('#app')
+
+// Log successful mounting
+console.log('Vue app mounted successfully')

@@ -95,7 +95,7 @@ export default {
       console.log('Found existing token, emitting login-success event')
       
       // Set the token in axios default headers
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
       
       // Verify token validity by making a test request
       this.verifyToken(token)
@@ -124,7 +124,7 @@ export default {
    */
   verifyToken(token) {
     // Make a simple request to check if the token is still valid
-    return axios.get('/customer/list?size=1', {
+    return api.get('/customer/list?size=1', {
       headers: {
         'Authorization': `Bearer ${token}`
       }

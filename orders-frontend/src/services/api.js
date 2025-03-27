@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Create an Axios instance with custom config
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // Backend API URL
+  baseURL: '/api', // Use the proxy configured in vite.config.js
   headers: {
     'Content-Type': 'application/json'
   }

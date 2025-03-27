@@ -14,7 +14,7 @@
 
     <div v-else>
       <div class="table-section">
-        <h3><i class="fas fa-clock"></i> Pedidos Pendientes</h3>
+        <h3 class="bg-primary-600"><i class="fas fa-clock text-secondary-500"></i> Pedidos Pendientes</h3>
         <div v-if="pendingOrders.length === 0" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
@@ -57,6 +57,7 @@
                   @click="markAsDelivered(order.id)" 
                   class="action-btn deliver-btn"
                   :disabled="!order.truck && !orderTrucks[order.id]"
+                  style="background-color: #ffd700; color: #e62222;"
                 >
                   <i class="fas fa-truck"></i> {{ translations.markDelivered }}
                 </button>
@@ -67,7 +68,7 @@
       </div>
 
       <div class="table-section">
-        <h3><i class="fas fa-truck"></i> Pedidos Entregados</h3>
+        <h3 class="bg-primary-600"><i class="fas fa-truck text-secondary-500"></i> Pedidos Entregados</h3>
         <div v-if="deliveredOrders.length === 0" class="empty-state">
           <i class="fas fa-inbox"></i>
           <p>{{ translations.noOrders }}</p>
@@ -507,15 +508,15 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   background-color: transparent;
-  color: var(--primary-color);
-  border: 1px solid var(--primary-color);
+  color: #e62222; /* Acodike red */
+  border: 1px solid #e62222; /* Acodike red */
   padding: 0.4rem 0.8rem;
   font-size: 0.9rem;
-  transition: var(--transition);
+  transition: all 0.3s ease;
 }
 
 .refresh-btn:hover {
-  background-color: var(--primary-color);
+  background-color: #e62222; /* Acodike red */
   color: white;
 }
 
@@ -528,10 +529,10 @@ onUnmounted(() => {
 }
 
 .table-section h3 {
-  background-color: var(--dark-color);
+  background-color: #e62222; /* Acodike red */
   color: white;
   padding: 0.5rem 0.8rem;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  border-radius: 0.375rem 0.375rem 0 0;
   font-size: 0.9rem;
   margin-bottom: 0;
   display: flex;
@@ -542,7 +543,7 @@ onUnmounted(() => {
 
 
 .table-section h3 i {
-  color: white;
+  color: #ffd700; /* Acodike yellow/gold */
 }
 
 table {
@@ -574,17 +575,18 @@ th, td {
 }
 
 .date-column {
-  width: 200px !important;
-  min-width: 200px !important;
-  max-width: 200px !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  white-space: nowrap;
 }
 
 td:first-child {
   font-weight: 500;
-  width: 200px !important;
-  min-width: 200px !important;
-  max-width: 200px !important;
-  white-space: normal !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  white-space: nowrap !important;
 }
 
 th {
@@ -603,17 +605,17 @@ tr:nth-child(even) {
 }
 
 tr:hover {
-  background-color: rgba(52, 152, 219, 0.1);
+  background-color: rgba(230, 34, 34, 0.1); /* Acodike red with transparency */
 }
 
 /* Column widths */
-th:nth-child(1), td:nth-child(1) { width: 6%; } /* Order ID */
+th:nth-child(1), td:nth-child(1) { width: auto; } /* Order ID - auto width to fit content */
 th:nth-child(2), td:nth-child(2) { width: 20%; } /* Customer */
-th:nth-child(3), td:nth-child(3) { width: 10%; } /* Created At */
+th:nth-child(3), td:nth-child(3) { width: auto; } /* Created At - auto width to fit content */
 th:nth-child(4), td:nth-child(4) { width: 10%; } /* Items - increased for better visibility */
-th:nth-child(5), td:nth-child(5) { width: 7%; } /* Total */
+th:nth-child(5), td:nth-child(5) { width: auto; } /* Total - auto width to fit content */
 th:nth-child(6), td:nth-child(6) { width: 20%; } /* Truck - reduced from 30% to 20% */
-th:nth-child(7), td:nth-child(7) { width: 17%; } /* Actions/Delivered - reduced to balance */
+th:nth-child(7), td:nth-child(7) { width: auto; } /* Actions/Delivered - auto width to fit content */
 
 .action-btn {
   padding: 0.1rem 0.2rem;
@@ -706,13 +708,13 @@ th:nth-child(7), td:nth-child(7) { width: 17%; } /* Actions/Delivered - reduced 
 }
 
 .truck-select:focus {
-  border-color: var(--primary-color);
+  border-color: #e62222; /* Acodike red */
   outline: none;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 0 0 2px rgba(230, 34, 34, 0.2);
 }
 
 .deliver-btn:disabled {
-  background-color: var(--gray-color);
+  background-color: #cccccc;
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
@@ -721,7 +723,7 @@ th:nth-child(7), td:nth-child(7) { width: 17%; } /* Actions/Delivered - reduced 
 
 .loading-indicator {
   font-size: 10px;
-  color: var(--gray-color);
+  color: #777777;
   margin-top: 1px;
   font-style: italic;
   display: block;
@@ -735,7 +737,7 @@ th:nth-child(7), td:nth-child(7) { width: 17%; } /* Actions/Delivered - reduced 
 
 .selected-truck-indicator {
   font-size: 9px;
-  color: var(--primary-color);
+  color: #e62222; /* Acodike red */
   font-weight: 600;
   margin-top: 1px;
   white-space: nowrap;

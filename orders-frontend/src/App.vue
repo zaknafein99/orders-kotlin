@@ -34,15 +34,15 @@ const showLayout = computed(() => {
   <!-- Main layout for authenticated pages -->
   <div v-else class="min-h-screen flex flex-col bg-slate-50">
     <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header class="bg-primary-600 shadow-md sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <!-- Logo and Navigation -->
           <div class="flex">
             <div class="flex-shrink-0 flex items-center">
               <router-link to="/" class="flex items-center">
-                <i class="fas fa-boxes text-primary-600 text-2xl mr-2"></i>
-                <span class="text-xl font-semibold text-slate-800">{{ $t('appTitle') }}</span>
+                <img src="./assets/acodike-logo.svg" alt="Acodike Supergas" class="h-10 w-auto mr-2" />
+                <span class="text-xl font-semibold text-white">Sistema de Pedidos</span>
               </router-link>
             </div>
             
@@ -50,7 +50,7 @@ const showLayout = computed(() => {
             <nav class="hidden md:ml-8 md:flex md:space-x-6">
               <router-link 
                 to="/dashboard" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-700 hover:text-primary-600 border-b-2 border-transparent hover:border-primary-500 transition-colors"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
               >
                 <i class="fas fa-chart-line mr-1"></i>
                 {{ $t('dashboard') }}
@@ -58,7 +58,7 @@ const showLayout = computed(() => {
               
               <router-link 
                 to="/customers" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-700 hover:text-primary-600 border-b-2 border-transparent hover:border-primary-500 transition-colors"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
               >
                 <i class="fas fa-users mr-1"></i>
                 {{ $t('customers') }}
@@ -66,7 +66,7 @@ const showLayout = computed(() => {
               
               <router-link 
                 to="/orders" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-slate-700 hover:text-primary-600 border-b-2 border-transparent hover:border-primary-500 transition-colors"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
               >
                 <i class="fas fa-clipboard-list mr-1"></i>
                 {{ $t('orders') }}
@@ -76,7 +76,7 @@ const showLayout = computed(() => {
           
           <!-- Right side menu (profile, etc) -->
           <div class="flex items-center space-x-4">
-            <button class="inline-flex items-center px-4 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <button class="inline-flex items-center px-4 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-700 bg-secondary-500 hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-400">
               <i class="fas fa-plus mr-1"></i>
               {{ $t('createOrder') }}
             </button>
@@ -86,7 +86,7 @@ const showLayout = computed(() => {
               <div>
                 <button type="button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
                   <span class="sr-only">{{ $t('profile') }}</span>
-                  <div class="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
+                  <div class="h-8 w-8 rounded-full bg-secondary-500 flex items-center justify-center text-primary-700">
                     <i class="fas fa-user"></i>
                   </div>
                 </button>
@@ -116,82 +116,176 @@ const showLayout = computed(() => {
 <style>
 /* All styles are now managed through Tailwind CSS */
 .router-link-active {
-  @apply border-primary-500 text-primary-600;
+  border-color: #e62222;
+  color: #e62222;
 }
 
 .router-link-exact-active {
-  @apply border-primary-500 text-primary-600 font-medium;
+  border-color: #e62222;
+  color: #e62222;
+  font-weight: 500;
 }
 
 .card {
-  @apply bg-white rounded-lg shadow-md p-6 mb-6;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-group {
-  @apply mb-4;
+  margin-bottom: 1rem;
 }
 
 .form-label {
-  @apply block text-sm font-medium text-slate-700 mb-1;
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 0.25rem;
 }
 
 .form-input {
-  @apply mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm;
+  margin-top: 0.25rem;
+  display: block;
+  width: 100%;
+  border-radius: 0.375rem;
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.form-input:focus {
+  border-color: #e62222;
+  box-shadow: 0 0 0 2px rgba(230, 34, 34, 0.2);
 }
 
 .form-error {
-  @apply mt-2 text-sm text-danger-600;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #dc2626;
 }
 
 .btn {
-  @apply inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 0 0 4px rgba(230, 34, 34, 0.5);
 }
 
 .btn-primary {
-  @apply text-white bg-primary-600 hover:bg-primary-700 focus:ring-primary-500;
+  color: white;
+  background-color: #e62222;
+}
+
+.btn-primary:hover {
+  background-color: #c91c1c;
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 2px rgba(230, 34, 34, 0.5);
 }
 
 .btn-secondary {
-  @apply text-white bg-slate-600 hover:bg-slate-700 focus:ring-slate-500;
+  color: white;
+  background-color: #475569;
+}
+
+.btn-secondary:hover {
+  background-color: #334155;
+}
+
+.btn-secondary:focus {
+  box-shadow: 0 0 0 2px rgba(71, 85, 105, 0.5);
 }
 
 .btn-danger {
-  @apply text-white bg-danger-600 hover:bg-danger-700 focus:ring-danger-500;
+  color: white;
+  background-color: #dc2626;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+.btn-danger:focus {
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.5);
 }
 
 .btn-success {
-  @apply text-white bg-success-600 hover:bg-success-700 focus:ring-success-500;
+  color: white;
+  background-color: #16a34a;
+}
+
+.btn-success:hover {
+  background-color: #15803d;
+}
+
+.btn-success:focus {
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.5);
 }
 
 .btn-outline {
-  @apply text-primary-600 bg-white border-primary-300 hover:bg-primary-50 focus:ring-primary-500;
+  color: #e62222;
+  background-color: white;
+  border-color: #f87171;
+}
+
+.btn-outline:hover {
+  background-color: #fee2e2;
+}
+
+.btn-outline:focus {
+  box-shadow: 0 0 0 2px rgba(230, 34, 34, 0.5);
 }
 
 .btn-sm {
-  @apply px-3 py-1.5 text-xs;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
 }
 
 .btn-lg {
-  @apply px-6 py-3 text-base;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
 }
 
 .alert {
-  @apply p-4 mb-4 rounded-md border-l-4;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.375rem;
+  border-left-width: 4px;
 }
 
 .alert-success {
-  @apply bg-success-50 border-success-500 text-success-700;
+  background-color: #dcfce7;
+  border-color: #16a34a;
+  color: #166534;
 }
 
 .alert-danger {
-  @apply bg-danger-50 border-danger-500 text-danger-700;
+  background-color: #fee2e2;
+  border-color: #dc2626;
+  color: #991b1b;
 }
 
 .alert-info {
-  @apply bg-primary-50 border-primary-500 text-primary-700;
+  background-color: #fee2e2;
+  border-color: #e62222;
+  color: #b91c1c;
 }
 
 .alert-warning {
-  @apply bg-warning-50 border-warning-500 text-warning-700;
+  background-color: #fef9c3;
+  border-color: #ca8a04;
+  color: #854d0e;
 }
 </style>

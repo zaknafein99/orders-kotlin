@@ -31,7 +31,7 @@
         </div>
       </div>
       
-      <button @click="login" :disabled="isLoading" class="btn-primary btn-full">
+      <button @click="login" :disabled="isLoading" class="btn-primary btn-full" style="background-color: #e62222; color: white;">
         <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-sign-in-alt"></i>
         {{ isLoading ? translations.loggingIn : translations.login }}
@@ -63,6 +63,7 @@
             @click="searchCustomer" 
             :disabled="isSearching || !phoneNumber || phoneNumber.length < 3"
             class="btn-primary search-btn"
+            style="background-color: #e62222; color: white;"
           >
             <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
             <i v-else class="fas fa-search"></i>
@@ -330,7 +331,7 @@ onMounted(() => {
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 6px;
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid #e62222; /* Acodike red */
   max-width: 100%;
   overflow-x: hidden;
   word-wrap: break-word;
@@ -363,7 +364,7 @@ onMounted(() => {
 
 .search-btn {
   white-space: nowrap;
-  background-color: var(--primary-color);
+  background-color: #e62222; /* Acodike red */
   border: none;
   color: white;
   padding: 0.75rem 1.5rem;
@@ -436,7 +437,7 @@ onMounted(() => {
 }
 
 .item:hover {
-  border-color: #42b883;
+  border-color: #e62222; /* Acodike red */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -446,7 +447,7 @@ onMounted(() => {
 }
 
 .item-price {
-  color: #42b883;
+  color: #e62222; /* Acodike red */
   font-weight: bold;
 }
 
@@ -517,6 +518,7 @@ onMounted(() => {
 .submit-btn {
   width: 100%;
   padding: 0.75rem;
-  background-color: #28a745;
+  background-color: #e62222; /* Acodike red */
+  color: white;
 }
 </style>

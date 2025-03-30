@@ -33,7 +33,12 @@
           <tbody>
             <tr v-for="order in pendingOrders" :key="order.id">
               <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
-              <td>{{ order.customerName }}</td>
+              <td>
+                <div class="customer-info">
+                  <div class="customer-name">{{ order.customerName }}</div>
+                  <div class="customer-phone">{{ order.customerPhone }}</div>
+                </div>
+              </td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
@@ -87,7 +92,12 @@
           <tbody>
             <tr v-for="order in deliveredOrders" :key="order.id">
               <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
-              <td>{{ order.customerName }}</td>
+              <td>
+                <div class="customer-info">
+                  <div class="customer-name">{{ order.customerName }}</div>
+                  <div class="customer-phone">{{ order.customerPhone }}</div>
+                </div>
+              </td>
               <td>{{ order.items.length }}</td>
               <td>${{ order.total.toFixed(2) }}</td>
               <td>
@@ -186,18 +196,23 @@ const fetchOrders = async () => {
     } else {
       console.log('Mapping pending orders data...')
       console.log('First order sample:', pendingData[0])
+      console.log('First order customer:', pendingData[0].customer)
       
-      pendingOrders.value = pendingData.map(order => ({
-        id: order.id,
-        customerName: order.customer.name,
-        createdAt: new Date(order.date),
-        items: order.items,
-        total: order.totalPrice,
-        truck: order.truck ? {
-          id: order.truck.id,
-          name: order.truck.name
-        } : null
-      }))
+      pendingOrders.value = pendingData.map(order => {
+        console.log('Processing order:', order.id, 'Customer:', order.customer)
+        return {
+          id: order.id,
+          customerName: order.customer.name,
+          customerPhone: order.customer.phoneNumber,
+          createdAt: new Date(order.date),
+          items: order.items,
+          total: order.totalPrice,
+          truck: order.truck ? {
+            id: order.truck.id,
+            name: order.truck.name
+          } : null
+        }
+      })
       
       // Sort pending orders by date, newest first
       pendingOrders.value.sort((a, b) => b.createdAt - a.createdAt)
@@ -233,6 +248,7 @@ const fetchOrders = async () => {
       deliveredOrders.value = filteredDeliveredData.map(order => ({
         id: order.id,
         customerName: order.customer.name,
+        customerPhone: order.customer.phoneNumber,
         createdAt: new Date(order.date),
         items: order.items,
         deliveredAt: new Date(order.date), // Using same date since backend doesn't have delivery date
@@ -540,8 +556,6 @@ onUnmounted(() => {
   gap: 0.5rem;
 }
 
-
-
 .table-section h3 i {
   color: #ffd700; /* Acodike yellow/gold */
 }
@@ -744,5 +758,20 @@ th:nth-child(7), td:nth-child(7) { width: auto; } /* Actions/Delivered - auto wi
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 150px;
+}
+
+.customer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customer-name {
+  font-weight: 500;
+}
+
+.customer-phone {
+  font-size: 0.85em;
+  color: #666;
 }
 </style>

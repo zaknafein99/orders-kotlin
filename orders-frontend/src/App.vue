@@ -34,71 +34,39 @@ const showLayout = computed(() => {
   <!-- Main layout for authenticated pages -->
   <div v-else class="min-h-screen flex flex-col bg-slate-50">
     <!-- Header -->
-    <header class="bg-primary-600 shadow-md sticky top-0 z-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <!-- Logo and Navigation -->
-          <div class="flex">
-            <div class="flex-shrink-0 flex items-center">
-              <router-link to="/" class="flex items-center">
-                <img src="./assets/acodike-logo.svg" alt="Acodike Supergas" class="h-10 w-auto mr-2" />
-                <span class="text-xl font-semibold text-white">Sistema de Pedidos</span>
-              </router-link>
-            </div>
-            
-            <!-- Desktop Navigation -->
-            <nav class="hidden md:ml-8 md:flex md:space-x-6">
-              <router-link 
-                to="/dashboard" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
-              >
-                <i class="fas fa-chart-line mr-1"></i>
-                {{ $t('dashboard') }}
-              </router-link>
-              
-              <router-link 
-                to="/customers" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
-              >
-                <i class="fas fa-users mr-1"></i>
-                {{ $t('customers') }}
-              </router-link>
-              
-              <router-link 
-                to="/orders" 
-                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-white hover:text-secondary-400 border-b-2 border-transparent hover:border-secondary-500 transition-colors"
-              >
-                <i class="fas fa-clipboard-list mr-1"></i>
-                {{ $t('orders') }}
-              </router-link>
-            </nav>
-          </div>
-          
-          <!-- Right side menu (profile, etc) -->
-          <div class="flex items-center space-x-4">
-            <button class="inline-flex items-center px-4 py-1.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-700 bg-secondary-500 hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-400">
-              <i class="fas fa-plus mr-1"></i>
-              {{ $t('createOrder') }}
-            </button>
-            
-            <!-- Profile dropdown -->
-            <div class="ml-3 relative">
-              <div>
-                <button type="button" class="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                  <span class="sr-only">{{ $t('profile') }}</span>
-                  <div class="h-8 w-8 rounded-full bg-secondary-500 flex items-center justify-center text-primary-700">
-                    <i class="fas fa-user"></i>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
+    <header class="header">
+      <div class="header-content">
+        <router-link to="/" class="logo-container">
+          <img src="@/assets/images/acodike-logo.svg" alt="Acodike Supergas" class="logo" />
+        </router-link>
+        <nav class="nav-links">
+          <router-link to="/dashboard" class="nav-link">
+            <i class="fas fa-chart-line"></i>
+            Dashboard
+          </router-link>
+          <router-link to="/customers" class="nav-link">
+            <i class="fas fa-users"></i>
+            Customers
+          </router-link>
+          <router-link to="/orders" class="nav-link">
+            <i class="fas fa-shopping-cart"></i>
+            Orders
+          </router-link>
+        </nav>
+        <div class="header-actions">
+          <button class="create-order-btn" @click="$router.push('/orders/new')">
+            <i class="fas fa-plus"></i>
+            Create Order
+          </button>
+          <button class="user-btn">
+            <i class="fas fa-user"></i>
+          </button>
         </div>
       </div>
     </header>
     
     <!-- Main content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="main-content">
       <router-view />
     </main>
     
@@ -287,5 +255,122 @@ const showLayout = computed(() => {
   background-color: #fef9c3;
   border-color: #ca8a04;
   color: #854d0e;
+}
+
+.header {
+  background-color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 0.25rem 0;
+}
+
+.logo {
+  height: 44px;
+  width: auto;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.router-link-active {
+  background-color: rgba(255, 255, 255, 0.15);
+  font-weight: 500;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.create-order-btn {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-order-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-btn {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+  
+  .header-content {
+    justify-content: space-between;
+  }
 }
 </style>

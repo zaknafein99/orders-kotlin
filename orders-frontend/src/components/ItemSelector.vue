@@ -290,17 +290,26 @@ const addToOrder = (item) => {
 }
 
 .add-btn {
-  background-color: #2196f3;
+  background-color: #e62222;
   color: white;
   border: none;
   padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-btn:hover {
+  background-color: #d41d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .add-btn:disabled {
-  background-color: #bbdefb;
+  background-color: #fca5a5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .no-items {

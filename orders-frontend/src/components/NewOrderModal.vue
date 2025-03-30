@@ -294,7 +294,7 @@ watch(() => props.show, (newVal) => {
 }
 
 .modal-content {
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 8px;
   width: 90%;
   max-width: 1200px;
@@ -303,6 +303,7 @@ watch(() => props.show, (newVal) => {
   padding: 20px;
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e62222;
 }
 
 .close {
@@ -311,11 +312,11 @@ watch(() => props.show, (newVal) => {
   right: 15px;
   font-size: 24px;
   cursor: pointer;
-  color: #666;
+  color: #e62222;
 }
 
 .close:hover {
-  color: #000;
+  color: #d41d1d;
 }
 
 .modal-loading {
@@ -328,7 +329,7 @@ watch(() => props.show, (newVal) => {
 
 .spinner {
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border-top: 4px solid #e62222;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -342,21 +343,25 @@ watch(() => props.show, (newVal) => {
 }
 
 .modal-error {
-  background-color: #ffebee;
-  color: #d32f2f;
+  background-color: #fee2e2;
+  color: #991b1b;
   padding: 15px;
   border-radius: 4px;
   margin-bottom: 20px;
 }
 
 .retry-btn {
-  background-color: #d32f2f;
+  background-color: #e62222;
   color: white;
   border: none;
   padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
   margin-top: 10px;
+}
+
+.retry-btn:hover {
+  background-color: #d41d1d;
 }
 
 .order-modal-layout {
@@ -367,7 +372,7 @@ watch(() => props.show, (newVal) => {
 
 .available-items-section {
   flex: 1;
-  border-right: 1px solid #eee;
+  border-right: 1px solid #e62222;
   padding-right: 20px;
 }
 
@@ -376,10 +381,8 @@ watch(() => props.show, (newVal) => {
   padding-left: 20px;
 }
 
-/* Simplified CSS since most styling is now in child components */
-
 .submit-btn {
-  background-color: #4caf50;
+  background-color: #e62222;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -387,25 +390,34 @@ watch(() => props.show, (newVal) => {
   cursor: pointer;
   width: 100%;
   font-size: 16px;
+  transition: all 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: #d41d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .submit-btn:disabled {
-  background-color: #a5d6a7;
+  background-color: #fca5a5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .order-error {
   margin-top: 15px;
-  color: #d32f2f;
-  background-color: #ffebee;
+  color: #991b1b;
+  background-color: #fee2e2;
   padding: 10px;
   border-radius: 4px;
 }
 
 .order-success {
   margin-top: 15px;
-  color: #2e7d32;
-  background-color: #e8f5e9;
+  color: #166534;
+  background-color: #dcfce7;
   padding: 10px;
   border-radius: 4px;
 }
@@ -417,7 +429,7 @@ watch(() => props.show, (newVal) => {
   
   .available-items-section {
     border-right: none;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #e62222;
     padding-right: 0;
     padding-bottom: 20px;
   }

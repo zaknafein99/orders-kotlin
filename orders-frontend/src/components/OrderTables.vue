@@ -62,7 +62,6 @@
                   @click="markAsDelivered(order.id)" 
                   class="action-btn deliver-btn"
                   :disabled="!order.truck && !orderTrucks[order.id]"
-                  style="background-color: #ffd700; color: #e62222;"
                 >
                   <i class="fas fa-truck"></i> {{ translations.markDelivered }}
                 </button>
@@ -632,25 +631,46 @@ th:nth-child(6), td:nth-child(6) { width: 20%; } /* Truck - reduced from 30% to 
 th:nth-child(7), td:nth-child(7) { width: auto; } /* Actions/Delivered - auto width to fit content */
 
 .action-btn {
-  padding: 0.1rem 0.2rem;
-  font-size: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
   height: auto;
   min-height: 0;
-  line-height: 1;
-  border-radius: 2px;
+  line-height: 1.2;
+  border-radius: 6px;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: all 0.2s ease;
 }
 
 .deliver-btn {
-  background-color: var(--secondary-color);
+  background-color: #ffd700;
+  color: #e62222;
   white-space: nowrap;
-  color: white;
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.4rem;
   max-width: 100%;
+  font-weight: 600;
+  border: 2px solid #e62222;
+  padding: 0.5rem 1rem;
+}
+
+.deliver-btn:hover {
+  background-color: #e62222;
+  color: #ffd700;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.deliver-btn:disabled {
+  background-color: #cccccc;
+  border-color: #999999;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
 }
 
 .empty-state {
@@ -725,14 +745,6 @@ th:nth-child(7), td:nth-child(7) { width: auto; } /* Actions/Delivered - auto wi
   border-color: #e62222; /* Acodike red */
   outline: none;
   box-shadow: 0 0 0 2px rgba(230, 34, 34, 0.2);
-}
-
-.deliver-btn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-  opacity: 0.6;
-  transform: none;
-  box-shadow: none;
 }
 
 .loading-indicator {

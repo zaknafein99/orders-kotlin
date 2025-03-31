@@ -107,6 +107,7 @@ import { translations } from '../utils/translations'
 import NewCustomerModal from './NewCustomerModal.vue'
 import { useCustomerStore } from '../stores/customer'
 import { useRouter } from 'vue-router'
+import { createOrderObject, validateOrder } from '../utils/orderUtils'
 
 // Props
 const props = defineProps({
@@ -181,6 +182,7 @@ const closeModal = () => {
 }
 
 const fetchTrucks = async () => {
+  console.log('Fetching trucks...')
   isLoadingTrucks.value = true
   trucksError.value = ''
   
@@ -194,19 +196,25 @@ const fetchTrucks = async () => {
       // Set default selected truck if available
       if (trucks.length > 0) {
         selectedTruck.value = trucks[0]
+        console.log('Default truck selected:', selectedTruck.value)
+      } else {
+        trucksError.value = 'No hay camiones disponibles'
+        console.warn('No trucks available')
       }
     } else {
-      trucksError.value = 'Invalid truck data format'
+      trucksError.value = 'Formato de datos de camiones inválido'
+      console.error('Invalid truck data format:', trucks)
     }
   } catch (error) {
     console.error('Error fetching trucks:', error)
-    trucksError.value = `Error fetching trucks: ${error.message || 'Unknown error'}`
+    trucksError.value = `Error al cargar camiones: ${error.message || 'Error desconocido'}`
   } finally {
     isLoadingTrucks.value = false
   }
 }
 
 const fetchItems = async () => {
+  console.log('Fetching items...')
   isLoadingItems.value = true
   itemsError.value = ''
   
@@ -218,12 +226,15 @@ const fetchItems = async () => {
       availableItems.value = data.content
       totalPages.value = data.totalPages || 1
       totalItems.value = data.totalElements || data.content.length
+      console.log(`Loaded ${availableItems.value.length} items, total pages: ${totalPages.value}`)
     } else if (Array.isArray(data)) {
       availableItems.value = data
       totalPages.value = Math.ceil(data.length / pageSize.value)
       totalItems.value = data.length
+      console.log(`Loaded ${availableItems.value.length} items from array`)
     } else {
-      itemsError.value = 'Invalid item data format'
+      itemsError.value = 'Formato de datos de items inválido'
+      console.error('Invalid item data format:', data)
     }
     
     // Initialize quantities for new items
@@ -234,7 +245,7 @@ const fetchItems = async () => {
     })
   } catch (error) {
     console.error('Error fetching items:', error)
-    itemsError.value = error.message || 'Failed to load items'
+    itemsError.value = error.message || 'Error al cargar items'
   } finally {
     isLoadingItems.value = false
   }
@@ -273,49 +284,60 @@ const updateDate = (date) => {
   orderDate.value = date
 }
 
-const submitOrder = async (orderData) => {
-  isSubmittingOrder.value = true
-  orderError.value = ''
-  orderSuccess.value = ''
-  
-  // Validate truck selection
-  if (!selectedTruck.value) {
-    orderError.value = 'Please select a truck for this order'
-    isSubmittingOrder.value = false
+const submitOrder = async () => {
+  if (!props.customer) {
+    console.error('No customer selected for order')
     return
   }
-  
+
+  if (!selectedTruck.value) {
+    console.error('No truck selected for order')
+    return
+  }
+
+  if (currentOrder.items.length === 0) {
+    console.error('No items in order')
+    return
+  }
+
   try {
-    // Make sure to include the selected truck in the order data
-    const orderWithTruck = {
-      ...orderData,
-      truck: selectedTruck.value
+    isSubmittingOrder.value = true
+    orderError.value = ''
+    orderSuccess.value = ''
+
+    console.log('Creating order with data:', {
+      customer: props.customer,
+      items: currentOrder.items,
+      truck: selectedTruck.value,
+      date: orderDate.value
+    })
+
+    const orderData = createOrderObject(
+      props.customer,
+      currentOrder.items,
+      selectedTruck.value,
+      orderDate.value
+    )
+
+    console.log('Order data created:', orderData)
+
+    // Validate order before submitting
+    const validation = validateOrder(orderData)
+    if (!validation.isValid) {
+      console.error('Order validation failed:', validation.errors)
+      orderError.value = validation.errors.join(', ')
+      return
     }
-    
-    console.log('Submitting order with truck:', orderWithTruck)
-    
-    const createdOrder = await OrderService.createOrder(orderWithTruck)
-    
-    console.log('Order created:', createdOrder)
-    orderSuccess.value = 'Order created successfully!'
-    
-    // Reset order after successful submission
-    currentOrder.items = []
-    
-    // Notify parent component
-    emit('order-created', createdOrder)
-    
-    // Notify other components via eventBus to refresh order tables
-    eventBus.emit('order-submitted', createdOrder)
-    
-    // Close modal after a delay
-    setTimeout(() => {
-      closeModal()
-    }, 2000)
-    
+
+    const response = await OrderService.createOrder(orderData)
+    console.log('Order created successfully:', response)
+
+    orderSuccess.value = 'Orden creada exitosamente'
+    emit('order-created', response)
+    closeModal()
   } catch (error) {
     console.error('Error creating order:', error)
-    orderError.value = error.message || 'Failed to create order'
+    orderError.value = error.response?.data?.message || 'Error al crear la orden'
   } finally {
     isSubmittingOrder.value = false
   }
@@ -370,12 +392,35 @@ const searchCustomer = async () => {
 // Watch for modal visibility changes
 watch(() => props.show, (newVal) => {
   if (newVal) {
-    // Reset and fetch items and trucks when modal opens
+    console.log('Modal opened, loading data...')
+    // Reset state
+    currentOrder.items = []
+    orderError.value = ''
+    orderSuccess.value = ''
     currentPage.value = 0
-    fetchItems()
-    fetchTrucks()
+    
+    // Fetch items and trucks
+    Promise.all([
+      fetchItems(),
+      fetchTrucks()
+    ]).catch(error => {
+      console.error('Error loading modal data:', error)
+    })
   }
 })
+
+// Add immediate option to watch to ensure it runs on component mount if modal is already open
+watch(() => props.show, (newVal) => {
+  if (newVal) {
+    console.log('Modal is open, loading data...')
+    Promise.all([
+      fetchItems(),
+      fetchTrucks()
+    ]).catch(error => {
+      console.error('Error loading modal data:', error)
+    })
+  }
+}, { immediate: true })
 </script>
 
 <style>

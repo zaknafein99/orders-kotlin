@@ -122,6 +122,30 @@ export default defineConfig({
             console.error('Truck proxy error:', err)
           })
         }
+      },
+      '/item': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxying item request:', {
+              method: req.method,
+              url: req.url,
+              headers: req.headers
+            })
+          })
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('Received item response:', {
+              status: proxyRes.statusCode,
+              url: req.url,
+              headers: proxyRes.headers
+            })
+          })
+          proxy.on('error', (err, req, res) => {
+            console.error('Item proxy error:', err)
+          })
+        }
       }
     }
   }

@@ -163,7 +163,7 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
 
-    return api.get(`/item/list?page=${page}&size=${size}&order=id,asc`, {
+    return api.get(`/item?page=${page}&size=${size}&order=id,asc`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

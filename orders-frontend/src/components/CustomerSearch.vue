@@ -81,6 +81,17 @@
         <i class="fas fa-exclamation-circle"></i> {{ searchError }}
       </div>
 
+      <!-- New Customer Button -->
+      <div v-if="showNewCustomerButton" class="new-customer-section">
+        <button 
+          @click="openNewCustomerModal"
+          class="btn-primary new-customer-btn"
+        >
+          <i class="fas fa-user-plus"></i>
+          {{ translations.newCustomer }}
+        </button>
+      </div>
+
       <div v-if="customer" class="customer-details card">
         <div class="customer-header">
           <h3><i class="fas fa-user"></i> {{ customer.name }}</h3>
@@ -128,6 +139,13 @@
       @close="closeNewOrderModal" 
       @order-created="handleOrderCreated" 
     />
+
+    <!-- Add NewCustomerModal component -->
+    <NewCustomerModal 
+      :is-open="showNewCustomerModal"
+      @close="closeNewCustomerModal"
+      @customer-created="handleCustomerCreated"
+    />
   </div>
 </template>
 
@@ -138,6 +156,7 @@ import { eventBus } from '../utils/eventBus'
 import NewOrderModal from './NewOrderModal.vue'
 import AuthService from '../services/AuthService'
 import { translations } from '../utils/translations'
+import NewCustomerModal from './NewCustomerModal.vue'
 
 // Authentication
 const isAuthenticated = ref(false)
@@ -154,6 +173,8 @@ const token = ref('')
 const phoneNumber = ref('')
 const customer = ref(null)
 const searchError = ref('')
+const showNewCustomerButton = ref(false)
+const showNewCustomerModal = ref(false)
 
 // Order management
 const showNewOrderModal = ref(false)
@@ -166,6 +187,15 @@ const openNewOrderModal = () => {
 // Function to close the order modal
 const closeNewOrderModal = () => {
   showNewOrderModal.value = false
+}
+
+// Function to handle customer created event
+const handleCustomerCreated = (newCustomer) => {
+  customer.value = newCustomer
+  showNewCustomerModal.value = false
+  showNewCustomerButton.value = false
+  searchError.value = ''
+  phoneNumber.value = newCustomer.phoneNumber
 }
 
 // Handle order created event from the modal
@@ -217,70 +247,58 @@ const login = async () => {
   }
 }
 
-// No longer using debounced search - now using a button click
-
-// Search customer by phone number
+// Function to search for a customer
 const searchCustomer = async () => {
-  // Don't proceed if phone number is empty or too short
   if (!phoneNumber.value || phoneNumber.value.length < 3) {
-    searchError.value = 'Please enter at least 3 digits of the phone number';
+    searchError.value = 'El número de teléfono debe tener al menos 3 dígitos'
     return
   }
-  
-  // Clear any previous search errors
-  searchError.value = ''
-  // Clear previous customer data
-  customer.value = null
-  
+
+  console.log('Searching for customer with phone:', phoneNumber.value)
   isSearching.value = true
   searchError.value = ''
+  customer.value = null
+  showNewCustomerButton.value = false
+
   try {
-      console.log('Searching for customer with phone:', phoneNumber.value)
-      
-      // The proxy is configured to rewrite /api to the root path
-      // We should NOT include /api twice in the URL
-      const response = await axios.get(
-        `/customer/by-phone/${phoneNumber.value}?size=5&page=0`
-      )
-      
-      console.log('Customer search response:', response.data)
-      
-      // Check if we received a direct customer object (has id property)
-      if (response.data && response.data.id) {
-        customer.value = response.data
-        console.log('Customer found:', customer.value)
-      }
-      // Check if we received a paginated response with content array
-      else if (response.data && response.data.content && response.data.content.length > 0) {
-        customer.value = response.data.content[0]
-        console.log('Customer found from paginated response:', customer.value)
-      } else {
-        customer.value = null
-        searchError.value = 'No customer found with that phone number'
-      }
-    } catch (error) {
-      console.error('Error fetching customer:', error)
-      customer.value = null
-      if (error.response) {
-        console.error('Response status:', error.response.status)
-        console.error('Response data:', error.response.data)
-        
-        if (error.response.status === 401 || error.response.status === 403) {
-          searchError.value = translations.authError
-          isAuthenticated.value = false
-          token.value = ''
-          localStorage.removeItem('token')
-        } else {
-          searchError.value = `${translations.errorSearchingCustomer}: ${error.response.status}`
-        }
-      } else {
-        searchError.value = `${translations.errorSearchingCustomer}: ${translations.networkError}`
-      }
-      customer.value = null
-    } finally {
-      isSearching.value = false
+    const response = await axios.get(`/customer/by-phone/${phoneNumber.value}?size=5&page=0`)
+    if (response.data) {
+      customer.value = response.data
+      showNewCustomerButton.value = false
+      searchError.value = ''
+    } else {
+      throw new Error('No customer data received')
     }
+  } catch (error) {
+    console.error('Error fetching customer:', error)
+    if (error.response?.status === 404) {
+      // Customer not found - show new customer button
+      searchError.value = 'No se encontró ningún cliente con ese número'
+      showNewCustomerButton.value = true
+      customer.value = null
+    } else if (error.response?.status === 403) {
+      searchError.value = 'No tiene permisos para buscar clientes'
+      showNewCustomerButton.value = false
+      customer.value = null
+    } else {
+      searchError.value = 'Error al buscar el cliente. Por favor, intente nuevamente.'
+      showNewCustomerButton.value = false
+      customer.value = null
+    }
+  } finally {
+    isSearching.value = false
   }
+}
+
+// Function to open new customer modal
+const openNewCustomerModal = () => {
+  showNewCustomerModal.value = true
+}
+
+// Function to close new customer modal
+const closeNewCustomerModal = () => {
+  showNewCustomerModal.value = false
+}
 
 // Check for existing token on component mount
 onMounted(() => {
@@ -554,5 +572,35 @@ onMounted(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+.new-customer-section {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.new-customer-btn {
+  background-color: #e62222;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.new-customer-btn:hover {
+  background-color: #d41d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.new-customer-btn i {
+  font-size: 1rem;
 }
 </style>

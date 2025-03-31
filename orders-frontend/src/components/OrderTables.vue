@@ -150,12 +150,25 @@ const fetchTrucks = async () => {
   trucksLoading.value = true
   trucksError.value = ''
   try {
-    const trucks = await TruckService.getAllTrucks()
-    availableTrucks.value = trucks
-    console.log('Trucks fetched successfully:', trucks)
+    console.log('Fetching trucks...')
+    const response = await TruckService.getAllTrucks()
+    console.log('Trucks response:', response)
+    
+    // Ensure we have an array of trucks
+    if (Array.isArray(response)) {
+      availableTrucks.value = response
+    } else if (response && response.content && Array.isArray(response.content)) {
+      availableTrucks.value = response.content
+    } else {
+      console.error('Unexpected trucks response format:', response)
+      availableTrucks.value = []
+    }
+    
+    console.log('Trucks fetched successfully:', availableTrucks.value)
   } catch (error) {
     console.error('Error fetching trucks:', error)
     trucksError.value = 'Failed to load trucks'
+    availableTrucks.value = [] // Ensure it's an array even on error
   } finally {
     trucksLoading.value = false
   }
@@ -304,7 +317,10 @@ const formatDate = (date) => {
 }
 
 const getSelectedTruckName = (truckId) => {
-  if (!truckId) return ''
+  if (!availableTrucks.value || !Array.isArray(availableTrucks.value)) {
+    console.warn('availableTrucks is not properly initialized:', availableTrucks.value)
+    return ''
+  }
   const truck = availableTrucks.value.find(t => String(t.id) === String(truckId))
   return truck ? truck.name : ''
 }

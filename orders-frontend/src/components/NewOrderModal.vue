@@ -51,7 +51,48 @@
           />
         </div>
       </div>
+      
+      <form @submit.prevent="handleSubmit" class="modal-form">
+        <div class="form-group">
+          <label for="customer">Cliente</label>
+          <div class="customer-search">
+            <input 
+              type="tel" 
+              id="customer" 
+              v-model="searchPhone" 
+              placeholder="Buscar por teléfono"
+              @input="searchCustomer"
+            >
+            <div v-if="searchPhone && !selectedCustomer" class="customer-actions">
+              <button 
+                type="button" 
+                class="new-customer-btn"
+                @click="showNewCustomerModal = true"
+              >
+                <i class="fas fa-user-plus"></i>
+                Nuevo Cliente
+              </button>
+            </div>
+            <div v-if="selectedCustomer" class="selected-customer">
+              <span>{{ selectedCustomer.name }}</span>
+              <button 
+                type="button" 
+                class="clear-customer-btn"
+                @click="clearCustomer"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
+    
+    <NewCustomerModal 
+      :is-open="showNewCustomerModal"
+      @close="showNewCustomerModal = false"
+      @customer-created="handleCustomerCreated"
+    />
   </div>
 </template>
 
@@ -63,6 +104,9 @@ import OrderSummary from './OrderSummary.vue'
 import OrderService from '../services/OrderService'
 import TruckService from '../services/TruckService'
 import { translations } from '../utils/translations'
+import NewCustomerModal from './NewCustomerModal.vue'
+import { useCustomerStore } from '../stores/customer'
+import { useRouter } from 'vue-router'
 
 // Props
 const props = defineProps({
@@ -72,12 +116,21 @@ const props = defineProps({
   },
   customer: {
     type: Object,
-    required: true
+    required: false,
+    default: null
   }
 })
 
 // Emits
-const emit = defineEmits(['close', 'order-created'])
+const emit = defineEmits(['close', 'order-created', 'customer-selected'])
+
+// Store
+const customerStore = useCustomerStore()
+
+// Customer search state
+const searchPhone = ref('')
+const selectedCustomer = ref(null)
+const showNewCustomerModal = ref(false)
 
 // Items state
 const availableItems = ref([])
@@ -268,6 +321,52 @@ const submitOrder = async (orderData) => {
   }
 }
 
+const handleCustomerCreated = (customer) => {
+  selectedCustomer.value = customer
+  emit('customer-selected', customer)
+}
+
+const clearCustomer = () => {
+  selectedCustomer.value = null
+}
+
+const router = useRouter()
+
+const searchCustomer = async () => {
+  if (!searchPhone.value) {
+    selectedCustomer.value = null
+    return
+  }
+
+  try {
+    const customer = await customerStore.searchCustomer(searchPhone.value)
+    if (customer) {
+      selectedCustomer.value = customer
+      emit('customer-selected', customer)
+    } else {
+      selectedCustomer.value = null
+      // Don't emit customer-selected event when no customer is found
+      // This will show the "Nuevo Cliente" button
+    }
+  } catch (error) {
+    // Handle authentication errors
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      // Clear any existing token
+      localStorage.removeItem('token')
+      // Redirect to login
+      router.push('/login')
+      return
+    }
+    
+    // Only log other errors
+    if (error.response?.status !== 404) {
+      console.error('Error searching customer:', error)
+    }
+    selectedCustomer.value = null
+    // Don't emit customer-selected event on error
+  }
+}
+
 // Watch for modal visibility changes
 watch(() => props.show, (newVal) => {
   if (newVal) {
@@ -281,4 +380,66 @@ watch(() => props.show, (newVal) => {
 
 <style>
 /* Styles moved to /src/assets/styles/components/NewOrderModal.css */
+
+.customer-search {
+  position: relative;
+}
+
+.customer-actions {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.new-customer-btn {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-customer-btn:hover {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  transform: translateY(-1px);
+}
+
+.selected-customer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+.selected-customer span {
+  font-weight: 500;
+  color: var(--dark-color);
+}
+
+.clear-customer-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.clear-customer-btn:hover {
+  background-color: #e5e7eb;
+  color: var(--primary-color);
+}
 </style>

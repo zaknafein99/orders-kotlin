@@ -22,36 +22,6 @@ const pinia = createPinia()
 // Create app
 const app = createApp(App)
 
-// Initialize app with plugins
-app.use(pinia)
-app.use(router)
-app.use(i18n)
-
-// Add Google Font
-const fontLink = document.createElement('link')
-fontLink.rel = 'stylesheet'
-fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
-document.head.appendChild(fontLink)
-
-// Set base URL for API requests
-// This means all axios requests will be prefixed with '/api'
-// The vite proxy will then rewrite these requests by removing the '/api' prefix
-// before forwarding them to the backend at http://localhost:8080
-axios.defaults.baseURL = '/api'
-
-// Enable credentials for cross-origin requests
-axios.defaults.withCredentials = true
-
-// Configure axios
-axios.defaults.headers.common['User-Agent'] = 'insomnia/8.4.5'
-axios.defaults.headers.post['Content-Type'] = 'application/json'
-
-// Add authentication token to all requests if available
-const token = localStorage.getItem('token')
-if (token) {
-  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-}
-
 // Add request interceptor for debugging and authentication
 axios.interceptors.request.use(config => {
   console.log(`Making request: ${config.method?.toUpperCase()} ${config.url}`)
@@ -91,7 +61,8 @@ axios.interceptors.response.use(response => {
   if (error.response) {
     console.error(`Request failed with status: ${error.response.status}`, error.config?.url)
     
-    if (error.response.status === 401 || error.response.status === 403) {
+    // Only handle 401 Unauthorized errors
+    if (error.response.status === 401) {
       console.error('Authentication error:', error.response.status, error.config?.url)
       console.error('Error details:', error.response.data)
       
@@ -123,6 +94,11 @@ app.config.errorHandler = (err, instance, info) => {
   console.error('Error Info:', info)
   console.error('Component:', instance)
 }
+
+// Initialize app with plugins
+app.use(pinia)
+app.use(router)
+app.use(i18n)
 
 // Mount the app
 app.mount('#app')

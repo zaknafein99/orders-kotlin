@@ -17,10 +17,9 @@ export default {
     console.log('Using token for orders request:', token ? `${token.substring(0, 15)}...` : 'No token')
     
     // Log the exact request we're making to compare with the curl command
-    console.log('Making request to: /orders with Authorization: Bearer ' + (token ? token.substring(0, 15) + '...' : 'No token'))
+    console.log('Making request to: /orders/pending with Authorization: Bearer ' + (token ? token.substring(0, 15) + '...' : 'No token'))
     
-    // Use a query parameter to only get pending orders
-    return api.get('/orders?status=PENDING', {
+    return api.get('/orders/pending', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Create an Axios instance with custom config
 const api = axios.create({
-  baseURL: '/api', // Use the proxy configured in vite.config.js
+  baseURL: '', // Remove baseURL to use relative paths
   headers: {
     'Content-Type': 'application/json'
   }
@@ -35,11 +35,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      // Handle unauthorized access
+      console.log('401 Unauthorized error - clearing token and redirecting to login')
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
+    // For all other errors, just reject the promise
     return Promise.reject(error)
   }
 )

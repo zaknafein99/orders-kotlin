@@ -21,16 +21,30 @@
         <!-- Left side: Available items list -->
         <div class="available-items-section">
           <h3>Items Disponibles</h3>
-          <ItemSelector 
-            :items="availableItems"
-            :is-loading="isLoadingItems"
-            :error="itemsError"
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            @add-item="addToOrder"
-            @change-page="changePage"
-            @retry="fetchItems"
-          />
+          
+          <!-- Display inventory alerts/warnings if any -->
+          <div v-if="inventoryAlerts.length > 0" class="inventory-warnings">
+            <div v-for="(alert, index) in inventoryAlerts" :key="index" 
+                 class="inventory-alert" :class="{ 'critical': alert.type === 'critical', 'warning': alert.type === 'warning' }">
+              <i class="fas" :class="alert.type === 'critical' ? 'fa-exclamation-triangle' : 'fa-exclamation-circle'"></i>
+              {{ alert.message }}
+            </div>
+          </div>
+          
+          <div class="items-container">
+            <ItemSelector 
+              ref="itemSelectorRef"
+              :items="availableItems"
+              :is-loading="isLoadingItems"
+              :error="itemsError"
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              @add-item="addToOrder"
+              @change-page="changePage"
+              @retry="fetchItems"
+              @inventory-alert="handleInventoryAlert"
+            />
+          </div>
         </div>
         
         <!-- Right side: Current order using OrderSummary component -->
@@ -45,6 +59,7 @@
             :error="orderError"
             :success-message="orderSuccess"
             :inventory-alerts="inventoryAlerts"
+            :inventory-projection-message="'La existencia en inventario se actualizará cuando el pedido sea marcado como entregado.'"
             @remove-item="removeFromOrder"
             @submit="submitOrder"
             @update-truck="updateTruck"
@@ -168,23 +183,25 @@ const todayFormatted = computed(() => {
 })
 
 // Methods
-const closeModal = () => {
-  // Reset state
+const resetModal = () => {
   currentOrder.items = []
-  
-  // Clear item quantities
   Object.keys(itemQuantities).forEach(key => {
     itemQuantities[key] = 0
   })
-  
-  // Clear alerts
   inventoryAlerts.value = []
-  
   orderError.value = ''
   orderSuccess.value = ''
   currentPage.value = 0
-  
-  // Emit close event
+  selectedTruck.value = null
+  orderDate.value = new Date().toISOString().split('T')[0]
+  // Notify ItemSelector to reset its state
+  if (itemSelectorRef.value) {
+    itemSelectorRef.value.resetItemSelections()
+  }
+}
+
+const closeModal = () => {
+  resetModal()
   emit('close')
 }
 
@@ -246,6 +263,12 @@ const fetchItems = async () => {
     
     // Initialize quantities for new items
     availableItems.value.forEach(item => {
+      // Initialize quantityToAdd property
+      if (item.quantityToAdd === undefined) {
+        item.quantityToAdd = 1
+      }
+      
+      // Also initialize in the itemQuantities object for backward compatibility
       if (itemQuantities[item.id] === undefined) {
         itemQuantities[item.id] = 0
       }
@@ -497,15 +520,33 @@ const searchCustomer = async () => {
   }
 }
 
+// Additional methods
+const handleInventoryAlert = (alert) => {
+  console.log('Received inventory alert:', alert)
+  
+  // Check if we already have an alert with the same message
+  const existingAlertIndex = inventoryAlerts.value.findIndex(a => a.message === alert.message)
+  
+  if (existingAlertIndex >= 0) {
+    // Update existing alert if needed
+    inventoryAlerts.value[existingAlertIndex] = {
+      ...inventoryAlerts.value[existingAlertIndex],
+      ...alert
+    }
+  } else {
+    // Add new alert
+    inventoryAlerts.value.push(alert)
+  }
+}
+
 // Watch for modal visibility changes
 watch(() => props.show, (newVal) => {
   if (newVal) {
     console.log('Modal opened, loading data...')
     // Reset state
-    currentOrder.items = []
-    orderError.value = ''
-    orderSuccess.value = ''
-    currentPage.value = 0
+    resetModal()
+    
+    // Reset inventory alerts
     inventoryAlerts.value = []
     
     // Fetch items and trucks
@@ -530,6 +571,9 @@ watch(() => props.show, (newVal) => {
     })
   }
 }, { immediate: true })
+
+// Ref for ItemSelector component
+const itemSelectorRef = ref(null)
 </script>
 
 <style>
@@ -595,5 +639,156 @@ watch(() => props.show, (newVal) => {
 .clear-customer-btn:hover {
   background-color: #e5e7eb;
   color: var(--primary-color);
+}
+
+/* Add these new styles to fix the modal width and layout issues */
+.modal-content {
+  width: 95%;
+  max-width: 1400px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.order-modal-layout {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.available-items-section, 
+.current-order-section {
+  flex: 1;
+  min-width: 0;
+  max-height: 75vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+}
+
+.modal-form {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .order-modal-layout {
+    flex-direction: column;
+  }
+  
+  .modal-content {
+    width: 95%;
+    max-width: 100%;
+  }
+  
+  .available-items-section, 
+  .current-order-section {
+    flex: none;
+    max-height: 50vh;
+  }
+}
+
+.inventory-warnings {
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.inventory-alert {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 4px;
+}
+
+.inventory-alert.critical {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-left: 4px solid #ef4444;
+}
+
+.inventory-alert.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-left: 4px solid #f59e0b;
+}
+
+.ordered-items {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.ordered-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ordered-item:last-child {
+  border-bottom: none;
+}
+
+.ordered-item-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.empty-cart {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-top: 2px solid #e5e7eb;
+}
+
+.remove-item-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+  gap: 0.5rem;
+}
+
+.page-btn {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  margin: 0 0.5rem;
 }
 </style>

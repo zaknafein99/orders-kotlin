@@ -65,7 +65,7 @@
             pero solo hay <span class="alert-available">{{ alert.available }}</span> disponibles.
           </p>
         </div>
-        <p class="inventory-note">La orden podrá procesarse de todas formas.</p>
+        <p class="inventory-note">{{ inventoryProjectionMessage || 'La orden podrá procesarse de todas formas.' }}</p>
       </div>
       
       <!-- Order summary -->
@@ -132,6 +132,10 @@ const props = defineProps({
   inventoryAlerts: {
     type: Array,
     default: () => []
+  },
+  inventoryProjectionMessage: {
+    type: String,
+    default: ''
   }
 })
 
@@ -225,6 +229,18 @@ const updateDate = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.order-summary-component h3 {
+  margin-top: 0;
+  color: var(--primary-color, #1d4ed8);
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .empty-order {
@@ -232,175 +248,213 @@ const updateDate = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  color: #666;
-  background-color: #f5f5f5;
+  padding: 2.5rem;
+  color: #6b7280;
+  background-color: #f9fafb;
   border-radius: 8px;
+  border: 1px dashed #d1d5db;
   flex-grow: 1;
+  margin: 1rem 0;
 }
 
 .instruction {
   font-size: 14px;
   margin-top: 10px;
-  color: #999;
+  color: #9ca3af;
 }
 
 .order-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 1.25rem;
 }
 
 .truck-selection, .order-date {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .truck-selection label, .order-date label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 500;
+  color: #4b5563;
+  font-size: 0.9rem;
 }
 
-select, input[type="date"] {
+.truck-selection select, .order-date input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #f9fafb;
+  font-size: 1rem;
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+}
+
+.truck-selection select:focus, .order-date input:focus {
+  outline: none;
+  border-color: var(--primary-color, #1d4ed8);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .order-items {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  max-height: 200px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  max-height: 300px;
   overflow-y: auto;
-  flex-grow: 1;
 }
 
 .order-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.order-item:last-child {
+  border-bottom: none;
 }
 
 .order-item-details {
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .item-name {
-  font-weight: bold;
+  flex: 1;
+  font-weight: 500;
 }
 
 .item-quantity {
-  background-color: #e3f2fd;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #4b5563;
 }
 
 .item-price {
-  color: #2e7d32;
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--primary-color, #1d4ed8);
 }
 
 .remove-btn {
-  background-color: #f44336;
-  color: white;
+  background-color: transparent;
+  color: #ef4444;
   border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
   cursor: pointer;
-  font-size: 12px;
+  transition: background-color 0.2s;
 }
 
-.order-total-section {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
+.remove-btn:hover {
+  background-color: #fee2e2;
 }
 
-.order-total {
-  font-size: 18px;
-  margin-bottom: 15px;
-}
-
-.submit-btn {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
-  font-size: 16px;
-}
-
-.submit-btn:disabled {
-  background-color: #a5d6a7;
-  cursor: not-allowed;
-}
-
-.order-error {
-  margin-top: 15px;
-  color: #d32f2f;
-  background-color: #ffebee;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.order-success {
-  margin-top: 15px;
-  color: #2e7d32;
-  background-color: #e8f5e9;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-/* Inventory alerts styles */
 .inventory-alerts {
-  margin: 1rem 0;
-  padding: 0.75rem;
-  background-color: #fff3cd;
-  border-left: 4px solid #fbbf24;
-  border-radius: 4px;
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5rem;
+  padding: 1rem;
 }
 
 .inventory-alert-title {
+  color: #d97706;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .inventory-alert {
   margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #fcd34d;
+}
+
+.inventory-alert:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .inventory-alert p {
-  margin: 0.25rem 0;
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .alert-requested {
+  color: #ef4444;
   font-weight: 600;
-  color: #b91c1c;
 }
 
 .alert-available {
+  color: #10b981;
   font-weight: 600;
-  color: #166534;
 }
 
 .inventory-note {
+  font-size: 0.875rem;
   font-style: italic;
-  font-size: 0.75rem;
-  color: #57534e;
-  margin-top: 0.5rem;
+  color: #9ca3af;
+  margin-top: 0.75rem;
   margin-bottom: 0;
+}
+
+.order-total-section {
+  margin-top: auto;
+  padding-top: 1.25rem;
+  border-top: 2px solid #f3f4f6;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.submit-btn {
+  width: 100%;
+  background-color: var(--primary-color, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+
+.submit-btn:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.order-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  border-radius: 0.375rem;
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.order-success {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background-color: #d1fae5;
+  border-radius: 0.375rem;
+  color: #10b981;
+  font-size: 0.875rem;
 }
 </style>

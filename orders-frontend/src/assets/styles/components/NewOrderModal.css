@@ -22,6 +22,8 @@
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid #e62222;
+  display: flex;
+  flex-direction: column;
 }
 
 .close {
@@ -31,6 +33,7 @@
   font-size: 24px;
   cursor: pointer;
   color: #e62222;
+  z-index: 10;
 }
 
 .close:hover {
@@ -86,17 +89,31 @@
   display: flex;
   gap: 20px;
   margin-top: 20px;
+  flex: 1;
+  min-height: 400px;
+  overflow: hidden;
 }
 
 .available-items-section {
   flex: 1;
-  border-right: 1px solid #e62222;
-  padding-right: 20px;
+  min-width: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
 }
 
 .current-order-section {
   flex: 1;
-  padding-left: 20px;
+  min-width: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
 }
 
 .submit-btn {
@@ -109,6 +126,7 @@
   width: 100%;
   font-size: 16px;
   transition: all 0.2s;
+  margin-top: 15px;
 }
 
 .submit-btn:hover {
@@ -140,20 +158,57 @@
   border-radius: 4px;
 }
 
+.modal-form {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.inventory-alerts {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #fff7ed;
+  border: 1px solid #fdba74;
+}
+
+.inventory-alert-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #fdba74;
+}
+
+.inventory-alert-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
 @media (max-width: 768px) {
   .order-modal-layout {
     flex-direction: column;
   }
   
-  .available-items-section {
-    border-right: none;
-    border-bottom: 1px solid #e62222;
-    padding-right: 0;
-    padding-bottom: 20px;
+  .available-items-section,
+  .current-order-section {
+    flex: none;
+    max-height: 50vh;
+    width: 100%;
   }
   
-  .current-order-section {
-    padding-left: 0;
-    padding-top: 20px;
+  .modal-content {
+    width: 95%;
+    padding: 15px;
   }
 } 

@@ -163,7 +163,8 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
 
-    return api.get(`/item?page=${page}&size=${size}&order=id,asc`, {
+    // Sort by name rather than id to maintain consistent sorting
+    return api.get(`/item?page=${page}&size=${size}&sort=name,asc`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -261,15 +262,8 @@ export default {
       const createdOrder = response.data
       console.log('Order created successfully with ID:', createdOrder.id);
       
-      // Update inventory quantities
-      this.updateInventoryQuantities(orderData.items)
-        .then(updateResults => {
-          console.log('Inventory updated for all items:', updateResults)
-        })
-        .catch(error => {
-          console.error('Error updating inventory:', error)
-          // Don't fail the order creation if inventory update fails
-        })
+      // We no longer update inventory at order creation time
+      // Inventory will only be updated when the order is marked as delivered
       
       // Refresh order tables
       this.refreshOrders(createdOrder)
@@ -572,7 +566,10 @@ export default {
   },
   
   /**
-   * Update inventory quantities after an order is created
+   * Update inventory quantities after an order is marked as delivered
+   * This method should ONLY be called when an order is delivered, not when it's created.
+   * It decreases the inventory quantities based on the items in the delivered order.
+   * 
    * @param {Array} items Order items with quantities
    * @returns {Promise} Promise with results of all inventory updates
    */
@@ -613,7 +610,8 @@ export default {
       }
       
       // First, get the current item to retrieve its properties and current quantity
-      return api.get(`/item/list?page=0&size=100&sort=id,asc`, {
+      // Use sort=name,asc for consistent sorting with other item requests
+      return api.get(`/item/list?page=0&size=100&sort=name,asc`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

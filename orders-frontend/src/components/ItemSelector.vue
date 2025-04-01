@@ -227,8 +227,9 @@ const getInventoryIcon = (item) => {
 /* Improve item card layout */
 .items-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .item-card {
@@ -288,6 +289,8 @@ const getInventoryIcon = (item) => {
   align-items: center;
   gap: 0.5rem;
   margin-top: auto;
+  padding-top: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .quantity-btn {
@@ -316,19 +319,28 @@ const getInventoryIcon = (item) => {
 }
 
 .add-btn {
-  flex-grow: 1;
-  background-color: var(--primary-color, #1d4ed8);
+  background-color: #e62222;
   color: white;
   border: none;
   border-radius: 4px;
   padding: 0.5rem;
+  font-size: 0.875rem;
   cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
+  flex: 1;
+  white-space: nowrap;
 }
 
-.add-btn:hover:not(.disabled) {
-  background-color: #1e40af;
+.add-btn:hover {
+  background-color: #d41d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-btn.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  color: #666666;
 }
 
 .in-stock {
@@ -344,10 +356,10 @@ const getInventoryIcon = (item) => {
 }
 
 .inventory-projection {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
   font-style: italic;
-  margin-left: 0.25rem;
-  font-size: 0.75rem;
-  color: #6b7280; /* Gray */
 }
 
 .inventory-status {
@@ -364,18 +376,6 @@ const getInventoryIcon = (item) => {
 .out-of-stock {
   color: var(--danger-color, #ef4444);
   font-weight: bold;
-}
-
-.add-btn.disabled {
-  background-color: #d1d5db;
-  cursor: not-allowed;
-}
-
-.inventory-projection {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin-top: 0.25rem;
-  font-style: italic;
 }
 
 .pagination-controls {

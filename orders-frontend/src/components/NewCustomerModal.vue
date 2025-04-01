@@ -71,13 +71,17 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useCustomerStore } from '@/stores/customer'
 
 const props = defineProps({
   isOpen: {
     type: Boolean,
     required: true
+  },
+  phoneNumber: {
+    type: String,
+    default: ''
   }
 })
 
@@ -94,6 +98,20 @@ const form = ref({
   notes: '',
   type: 'C', // Default to Customer type
   state: 'A' // Default to Active state
+})
+
+// Watch for changes to the phoneNumber prop and update the form
+watch(() => props.phoneNumber, (newPhoneNumber) => {
+  if (newPhoneNumber) {
+    form.value.phone = newPhoneNumber
+  }
+}, { immediate: true })
+
+// Watch for modal open/close to reset form when opening
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen && props.phoneNumber) {
+    form.value.phone = props.phoneNumber
+  }
 })
 
 const closeModal = () => {

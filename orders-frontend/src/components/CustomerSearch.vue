@@ -143,6 +143,7 @@
     <!-- Add NewCustomerModal component -->
     <NewCustomerModal 
       :is-open="showNewCustomerModal"
+      :phone-number="phoneNumber"
       @close="closeNewCustomerModal"
       @customer-created="handleCustomerCreated"
     />

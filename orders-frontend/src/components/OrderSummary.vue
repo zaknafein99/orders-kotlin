@@ -78,7 +78,8 @@
           :disabled="isSubmitting || items.length === 0 || !selectedTruck" 
           class="submit-btn"
         >
-          {{ isSubmitting ? translations.submitting : translations.submitOrder }}
+          <i class="fas fa-check-circle"></i>
+          {{ isSubmitting ? translations.submitting : 'Crear Pedido' }}
         </button>
         <div v-if="error" class="order-error">
           {{ error }}

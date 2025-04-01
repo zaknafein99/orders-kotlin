@@ -1,6 +1,6 @@
 <template>
-  <div v-if="show" class="modal">
-    <div class="modal-content">
+  <div v-if="show" class="new-order-modal-wrapper" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center;">
+    <div class="new-order-modal-content" style="width: 95vw !important; max-width: 90vw !important; height: 90vh !important; background-color: white; border-radius: 8px; padding: 15px; position: relative; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); border: 1px solid #e62222; display: flex; flex-direction: column; overflow: auto;">
       <span class="close" @click="closeModal">&times;</span>
       <h2>{{ translations.newOrder }} - {{ customer?.name }}</h2>
       
@@ -17,9 +17,9 @@
       </div>
       
       <!-- Modal layout -->
-      <div class="order-modal-layout">
+      <div class="order-modal-layout" style="display: flex; width: 100%; gap: 20px; flex: 1; height: calc(90vh - 100px); overflow: hidden;">
         <!-- Left side: Available items list -->
-        <div class="available-items-section">
+        <div class="available-items-section" style="flex: 7; min-width: 0; height: 100%; overflow-y: auto; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
           <h3>Items Disponibles</h3>
           
           <!-- Display inventory alerts/warnings if any -->
@@ -48,7 +48,7 @@
         </div>
         
         <!-- Right side: Current order using OrderSummary component -->
-        <div class="current-order-section">
+        <div class="current-order-section" style="flex: 3; min-width: 0; height: 100%; overflow-y: auto; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #f9fafb;">
           <OrderSummary 
             :items="currentOrder.items"
             :customer="customer"
@@ -67,41 +67,6 @@
           />
         </div>
       </div>
-      
-      <form @submit.prevent="handleSubmit" class="modal-form">
-        <div class="form-group">
-          <label for="customer">Cliente</label>
-          <div class="customer-search">
-            <input 
-              type="tel" 
-              id="customer" 
-              v-model="searchPhone" 
-              placeholder="Buscar por teléfono"
-              @input="searchCustomer"
-            >
-            <div v-if="searchPhone && !selectedCustomer" class="customer-actions">
-              <button 
-                type="button" 
-                class="new-customer-btn"
-                @click="showNewCustomerModal = true"
-              >
-                <i class="fas fa-user-plus"></i>
-                Nuevo Cliente
-              </button>
-            </div>
-            <div v-if="selectedCustomer" class="selected-customer">
-              <span>{{ selectedCustomer.name }}</span>
-              <button 
-                type="button" 
-                class="clear-customer-btn"
-                @click="clearCustomer"
-              >
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
     </div>
     
     <NewCustomerModal 
@@ -639,55 +604,6 @@ const itemSelectorRef = ref(null)
 .clear-customer-btn:hover {
   background-color: #e5e7eb;
   color: var(--primary-color);
-}
-
-/* Add these new styles to fix the modal width and layout issues */
-.modal-content {
-  width: 95%;
-  max-width: 1400px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.order-modal-layout {
-  display: flex;
-  gap: 2rem;
-  flex: 1;
-  overflow: hidden;
-}
-
-.available-items-section, 
-.current-order-section {
-  flex: 1;
-  min-width: 0;
-  max-height: 75vh;
-  overflow-y: auto;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  background-color: #f9fafb;
-}
-
-.modal-form {
-  margin-top: 1.5rem;
-}
-
-@media (max-width: 768px) {
-  .order-modal-layout {
-    flex-direction: column;
-  }
-  
-  .modal-content {
-    width: 95%;
-    max-width: 100%;
-  }
-  
-  .available-items-section, 
-  .current-order-section {
-    flex: none;
-    max-height: 50vh;
-  }
 }
 
 .inventory-warnings {

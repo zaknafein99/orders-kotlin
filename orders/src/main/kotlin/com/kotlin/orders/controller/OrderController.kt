@@ -14,21 +14,47 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/orders")
+@CrossOrigin
 class OrderController(val orderService: OrderService) {
+
+    private val logger: Logger = LoggerFactory.getLogger(OrderController::class.java)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createOrder(@RequestBody @Valid orderDTO: OrderDTO): ResponseEntity<OrderDTO> =
-
         ResponseEntity.ok(orderService.createOrder(orderDTO))
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getOrders(@PageableDefault(page = 0, size = 10) pageable: Pageable): Page<OrderDTO> =
         orderService.getOrders(pageable)
+
+    @GetMapping("/pending")
+    @ResponseStatus(HttpStatus.OK)
+    fun getPendingOrders(): List<OrderDTO> =
+        orderService.getPendingOrders()
+
+    @GetMapping("/delivered")
+    @ResponseStatus(HttpStatus.OK)
+    fun getDeliveredOrders(): List<OrderDTO> =
+        orderService.getDeliveredOrders()
+
+    @PostMapping("/{orderId}/deliver")
+    @ResponseStatus(HttpStatus.OK)
+    fun markOrderAsDelivered(@PathVariable orderId: Int): OrderDTO =
+        orderService.markAsDelivered(orderId)
+
+    @DeleteMapping("/{orderId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun cancelOrder(@PathVariable orderId: Int) {
+        logger.info("Received request to cancel order: $orderId")
+        orderService.deleteOrder(orderId)
+    }
 
     @GetMapping("/customer")
     @ResponseStatus(HttpStatus.OK)
@@ -41,7 +67,6 @@ class OrderController(val orderService: OrderService) {
     fun getOrdersByCustomerPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable, @RequestParam phoneNumber: String): Page<OrderDTO> =
         orderService.getOrdersByCustomerPaged(pageable, phoneNumber)
 
-
     @GetMapping("/truck/{truckId}")
     fun getOrdersByTruckIdAndDate(@PageableDefault(page = 0, size = 10) pageable: Pageable,
                                   @PathVariable truckId: Int,
@@ -50,5 +75,11 @@ class OrderController(val orderService: OrderService) {
         val dayTotalPrice = orderService.getTotalPriceByTruckIdAndDate(truckId, deliveryDate, pageable)
         val response = mapOf("orders" to orders, "dayTotalPrice" to dayTotalPrice)
         return ResponseEntity.ok().body(response)
+    }
+    @PostMapping("/{orderId}/truck")
+    @ResponseStatus(HttpStatus.OK)
+    fun assignTruckToOrder(@PathVariable orderId: Int, @RequestBody payload: Map<String, Int>): OrderDTO {
+        val truckId = payload["truckId"] ?: throw IllegalArgumentException("truckId is required")
+        return orderService.assignTruckToOrder(orderId, truckId)
     }
 }

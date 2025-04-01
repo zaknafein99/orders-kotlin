@@ -1,0 +1,30 @@
+meta {
+  name: Add one item
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{host}}/item
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+      "name": "qwe",
+      "description": "qwe",
+      "price": 1,
+      "quantity": 1,
+      "category": "asdasd"
+  }
+}

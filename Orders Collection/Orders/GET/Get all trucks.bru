@@ -1,0 +1,19 @@
+meta {
+  name: Get all trucks
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{host}}/truck
+  body: none
+  auth: bearer
+}
+
+headers {
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}

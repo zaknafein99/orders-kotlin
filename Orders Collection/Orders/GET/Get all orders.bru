@@ -1,0 +1,19 @@
+meta {
+  name: Get all orders
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{host}}/orders
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}

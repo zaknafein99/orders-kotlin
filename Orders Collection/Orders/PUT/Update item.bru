@@ -1,0 +1,27 @@
+meta {
+  name: Update item
+  type: http
+  seq: 5
+}
+
+put {
+  url: localhost:8080/item/2
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+body:json {
+  {
+  		"id": 2,
+  		"name": "Valvula 13k",
+  		"description": "Valvula Garrafa 13k",
+  		"price": 1100.0,
+  		"quantity": 9,
+  		"category": "Valvulas"
+  	}
+}

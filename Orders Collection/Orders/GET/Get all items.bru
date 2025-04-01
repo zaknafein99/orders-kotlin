@@ -1,0 +1,25 @@
+meta {
+  name: Get all items
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{host}}/item/list
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 0
+  size: 10
+  order: id,asc
+}
+
+headers {
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -9,6 +9,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.DefaultSecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
@@ -22,21 +25,42 @@ class SecurityConfiguration(
             jwtAuthenticationFilter: JwtAuthenticationFilter
     ): DefaultSecurityFilterChain =
             http
-                .csrf{ it.disable() }
-                .authorizeHttpRequests{
+                .cors { it.configurationSource(corsConfigurationSource()) }
+                .csrf { it.disable() }
+                .authorizeHttpRequests {
                     it
-                            .requestMatchers("/auth", "/auth/refresh", "/error")
-                            .permitAll()
+                            .requestMatchers(
+                                "/auth", 
+                                "/auth/refresh", 
+                                "/error",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/webjars/**"
+                            ).permitAll()
+                            .requestMatchers(HttpMethod.GET, "/customer/by-phone/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/user").permitAll()
-                            .requestMatchers("/user**").hasRole("ADMIN")
-                            .anyRequest().fullyAuthenticated()
+                            .requestMatchers("/user/**").hasRole("ADMIN")
+                            .anyRequest().authenticated()
                 }
-                .sessionManagement{
+                .sessionManagement {
                     it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 }
-                 .authenticationProvider(authenticationProvider)
+                .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
                 .build()
 
-
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration()
+        configuration.addAllowedOriginPattern("*")
+        configuration.addAllowedMethod("*")
+        configuration.addAllowedHeader("*")
+        configuration.allowCredentials = true
+        configuration.maxAge = 3600L
+        
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return source
+    }
 }

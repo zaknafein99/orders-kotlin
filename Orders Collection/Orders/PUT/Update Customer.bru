@@ -1,0 +1,28 @@
+meta {
+  name: Update Customer
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:8080/customer/9253
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  
+  {
+  			"id": 9253,
+  			"name": "Jane Smith",
+  			"address": "456 Oak St",
+  			"phoneNumber": "555-5689",
+  			"type": "E",
+  			"state": "A"
+  		}
+  
+}

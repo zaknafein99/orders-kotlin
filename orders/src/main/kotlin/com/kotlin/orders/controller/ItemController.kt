@@ -37,7 +37,7 @@ class ItemController(val itemService: ItemService, val itemRepository: ItemRepos
 
     @GetMapping("/list")
     @ResponseStatus(HttpStatus.OK)
-    fun getItemsPaged(@PageableDefault(page = 0, size = 10) pageable: Pageable) : Page<ItemDTO>{
+    fun getItemsPaged(@PageableDefault(page = 0, size = 10, sort = ["name"]) pageable: Pageable) : Page<ItemDTO>{
         return itemService.findAll(pageable)
     }
 

@@ -1,0 +1,50 @@
+meta {
+  name: Add Customers
+  type: http
+  seq: 5
+}
+
+post {
+  url: localhost:8080/customer/list
+  body: json
+  auth: bearer
+}
+
+params:query {
+  ~: 
+}
+
+headers {
+  Content-Type: application/json
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  [
+    {
+      "name": "John Doe",
+      "address": "123 Main St",
+      "phoneNumber": "555-1234",
+  		"type": "E",
+      "state": "A"
+    },
+    {
+      "name": "Jane Smith",
+      "address": "456 Oak St",
+      "phoneNumber": "555-5678",
+  		"type": "E",
+      "state": "A"
+    },
+  	{
+  	"name": "Karen Barreto",
+  		"address": "Leandro Gomez 1174 ap 3",
+  		"phoneNumber": "099052956",
+  		"type": "E",
+      "state": "A"
+  }
+  ]
+}

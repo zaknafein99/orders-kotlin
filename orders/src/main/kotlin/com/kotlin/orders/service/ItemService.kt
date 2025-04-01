@@ -28,11 +28,11 @@ class ItemService(val itemRepository: ItemRepository){
     }
 
     fun getItems(): List<ItemDTO> {
-
-        return itemRepository.findAll().map {
-            ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
-        }
-
+        return itemRepository.findAll()
+            .sortedBy { it.name }
+            .map {
+                ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
+            }
     }
 
     fun addListOfItems(itemDTO: List<ItemDTO>): List<ItemDTO> {
@@ -81,9 +81,11 @@ class ItemService(val itemRepository: ItemRepository){
     }
 
     fun getItemsByIds(itemIds: List<Int>): List<ItemDTO> {
-        return itemRepository.findAllById(itemIds).map {
-            ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
-        }
+        return itemRepository.findAllById(itemIds)
+            .sortedBy { it.name }
+            .map {
+                ItemDTO(it.id, it.name, it.description, it.price, it.quantity, it.category)
+            }
     }
 
     fun findAll(pageable: Pageable): Page<ItemDTO> {

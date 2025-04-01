@@ -1,0 +1,19 @@
+meta {
+  name: Find customers by phone
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{host}}/customer/by-phone/22222
+  body: none
+  auth: bearer
+}
+
+headers {
+  User-Agent: insomnia/8.2.0
+}
+
+auth:bearer {
+  token: {{token}}
+}

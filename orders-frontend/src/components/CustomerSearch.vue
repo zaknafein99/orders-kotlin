@@ -2,31 +2,31 @@
   <div class="customer-search card">
     <div v-if="!isAuthenticated" class="auth-section">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lock"></i> {{ translations.loginToContinue }}</h3>
+        <h3 class="card-title"><i class="fas fa-lock"></i> Iniciar sesión para continuar</h3>
       </div>
       
       <div class="form-group">
-        <label for="email">{{ translations.email }}</label>
+        <label for="email">Correo Electrónico</label>
         <div class="input-with-icon">
           <i class="fas fa-envelope"></i>
           <input
             id="email"
             v-model="authData.email"
             type="email"
-            :placeholder="translations.email"
+            placeholder="Correo electrónico"
           />
         </div>
       </div>
       
       <div class="form-group">
-        <label for="password">{{ translations.password }}</label>
+        <label for="password">Contraseña</label>
         <div class="input-with-icon">
           <i class="fas fa-key"></i>
           <input
             id="password"
             v-model="authData.password"
             type="password"
-            :placeholder="translations.password"
+            placeholder="Contraseña"
           />
         </div>
       </div>
@@ -34,7 +34,7 @@
       <button @click="login" :disabled="isLoading" class="btn-primary btn-full" style="background-color: #e62222; color: white;">
         <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-sign-in-alt"></i>
-        {{ isLoading ? translations.loggingIn : translations.login }}
+        {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
       </button>
       
       <div v-if="authError" class="alert alert-danger">
@@ -44,18 +44,18 @@
 
     <div v-if="isAuthenticated" class="search-section">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-search"></i> {{ translations.searchCustomer }}</h3>
+        <h3 class="card-title"><i class="fas fa-search"></i> Buscar Cliente</h3>
       </div>
       
       <div class="form-group">
-        <label for="phoneNumber">{{ translations.phoneNumber }}</label>
+        <label for="phoneNumber">Teléfono</label>
         <div class="input-with-icon">
           <i class="fas fa-phone"></i>
           <input
             id="phoneNumber"
             v-model="phoneNumber"
             type="text"
-            :placeholder="translations.searchByPhoneNumber"
+            placeholder="Buscar por número de teléfono"
             @input="handleSearchInput"
           />
         </div>
@@ -63,7 +63,7 @@
       
       <div v-if="isSearching" class="loading-state">
         <div class="spinner"></div>
-        <p>{{ translations.searching }}</p>
+        <p>Buscando...</p>
       </div>
       
       <div v-if="searchError" class="alert alert-danger">
@@ -77,7 +77,7 @@
           class="btn-primary new-customer-btn"
         >
           <i class="fas fa-user-plus"></i>
-          {{ translations.newCustomer }}
+          Nuevo Cliente
         </button>
       </div>
 
@@ -93,7 +93,7 @@
           <div class="info-item">
             <i class="fas fa-phone"></i>
             <div>
-              <span class="info-label">{{ translations.phoneNumber }}</span>
+              <span class="info-label">Teléfono</span>
               <span class="info-value">{{ customer.phoneNumber }}</span>
             </div>
           </div>
@@ -101,7 +101,7 @@
           <div class="info-item">
             <i class="fas fa-map-marker-alt"></i>
             <div>
-              <span class="info-label">{{ translations.address }}</span>
+              <span class="info-label">Dirección</span>
               <span class="info-value">{{ customer.address }}</span>
             </div>
           </div>
@@ -116,7 +116,7 @@
         </div>
         
         <button @click="openNewOrderModal" class="btn-secondary btn-full new-order-btn">
-          <i class="fas fa-plus-circle"></i> {{ translations.newOrder }}
+          <i class="fas fa-plus-circle"></i> Nuevo Pedido
         </button>
       </div>
     </div>

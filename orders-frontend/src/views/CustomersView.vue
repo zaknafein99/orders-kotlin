@@ -1,9 +1,9 @@
 <template>
   <div class="customers">
     <div class="page-header">
-      <h1>Customer Management</h1>
+      <h1>Gestión de Clientes</h1>
       <button @click="openNewCustomerModal" class="btn-primary">
-        <i class="fas fa-user-plus"></i> New Customer
+        <i class="fas fa-user-plus"></i> Nuevo Cliente
       </button>
     </div>
 
@@ -11,14 +11,14 @@
       <!-- Search and Filter Section -->
       <div class="search-section card">
         <div class="form-group">
-          <label for="searchPhone">Search by Phone</label>
+          <label for="searchPhone">Buscar por Teléfono</label>
           <div class="input-with-icon">
             <i class="fas fa-phone"></i>
             <input
               id="searchPhone"
               v-model="searchPhone"
               type="text"
-              placeholder="Enter phone number"
+              placeholder="Ingrese número de teléfono"
               @input="handleSearch"
             />
           </div>
@@ -30,7 +30,7 @@
         <!-- Page Size Selector -->
         <div class="table-controls">
           <div class="page-size-selector">
-            <label for="pageSize">Show:</label>
+            <label for="pageSize">Mostrar:</label>
             <select 
               id="pageSize" 
               v-model="pageSize" 
@@ -43,13 +43,13 @@
               <option value="75">75</option>
               <option value="100">100</option>
             </select>
-            <span class="entries-text">entries</span>
+            <span class="entries-text">registros</span>
           </div>
         </div>
 
         <div v-if="isLoading" class="loading-state">
           <div class="spinner"></div>
-          <p>Loading customers...</p>
+          <p>Cargando clientes...</p>
         </div>
 
         <div v-else-if="error" class="alert alert-danger">
@@ -58,18 +58,18 @@
 
         <div v-else-if="customers.length === 0" class="empty-state">
           <i class="fas fa-users"></i>
-          <p>No customers found</p>
+          <p>No se encontraron clientes</p>
         </div>
 
         <table v-else class="data-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Address</th>
-              <th>Type</th>
-              <th>State</th>
-              <th>Actions</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Dirección</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -79,19 +79,19 @@
               <td>{{ customer.address }}</td>
               <td>
                 <span class="badge" :class="customer.type === 'C' ? 'badge-customer' : 'badge-supplier'">
-                  {{ customer.type === 'C' ? 'Customer' : 'Supplier' }}
+                  {{ customer.type === 'C' ? 'Cliente' : 'Proveedor' }}
                 </span>
               </td>
               <td>
                 <span class="badge" :class="customer.state === 'A' ? 'badge-active' : 'badge-inactive'">
-                  {{ customer.state === 'A' ? 'Active' : 'Inactive' }}
+                  {{ customer.state === 'A' ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
               <td class="actions">
-                <button @click="editCustomer(customer)" class="btn-icon" title="Edit">
+                <button @click="editCustomer(customer)" class="btn-icon" title="Editar">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button @click="confirmDelete(customer)" class="btn-icon" title="Delete">
+                <button @click="confirmDelete(customer)" class="btn-icon" title="Eliminar">
                   <i class="fas fa-trash"></i>
                 </button>
               </td>
@@ -109,7 +109,7 @@
             <i class="fas fa-chevron-left"></i>
           </button>
           <span class="page-info">
-            Page {{ currentPage + 1 }} of {{ totalPages }}
+            Página {{ currentPage + 1 }} de {{ totalPages }}
           </span>
           <button 
             :disabled="currentPage === totalPages - 1"
@@ -136,20 +136,20 @@
     <div v-if="showDeleteModal" class="modal-overlay" @click="closeDeleteModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>Confirm Delete</h2>
+          <h2>Confirmar Eliminación</h2>
           <button class="close-btn" @click="closeDeleteModal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete this customer?</p>
+          <p>¿Está seguro que desea eliminar este cliente?</p>
           <p class="customer-name">{{ selectedCustomer?.name }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="closeDeleteModal">Cancel</button>
+          <button class="btn-secondary" @click="closeDeleteModal">Cancelar</button>
           <button class="btn-danger" @click="deleteCustomer" :disabled="isDeleting">
             <i v-if="isDeleting" class="fas fa-spinner fa-spin"></i>
-            Delete
+            Eliminar
           </button>
         </div>
       </div>
@@ -314,6 +314,38 @@ onMounted(() => {
   font-size: 1.875rem;
   font-weight: 600;
   color: var(--dark-color);
+}
+
+/* New styles for the New Customer button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: #e62222;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(230, 34, 34, 0.1);
+}
+
+.btn-primary:hover {
+  background-color: #d41d1d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(230, 34, 34, 0.2);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(230, 34, 34, 0.2);
+}
+
+.btn-primary i {
+  font-size: 1rem;
 }
 
 .search-section {

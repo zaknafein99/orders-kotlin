@@ -56,19 +56,8 @@
             v-model="phoneNumber"
             type="text"
             :placeholder="translations.searchByPhoneNumber"
+            @input="handleSearchInput"
           />
-        </div>
-        <div class="search-button-container">
-          <button 
-            @click="searchCustomer" 
-            :disabled="isSearching || !phoneNumber || phoneNumber.length < 3"
-            class="btn-primary search-btn"
-            style="background-color: #e62222; color: white;"
-          >
-            <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-search"></i>
-            {{ translations.search }}
-          </button>
         </div>
       </div>
       
@@ -151,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
 import NewOrderModal from './NewOrderModal.vue'
@@ -176,6 +165,7 @@ const customer = ref(null)
 const searchError = ref('')
 const showNewCustomerButton = ref(false)
 const showNewCustomerModal = ref(false)
+const searchTimeout = ref(null)
 
 // Order management
 const showNewOrderModal = ref(false)
@@ -248,13 +238,37 @@ const login = async () => {
   }
 }
 
-// Function to search for a customer
-const searchCustomer = async () => {
-  if (!phoneNumber.value || phoneNumber.value.length < 3) {
-    searchError.value = 'El número de teléfono debe tener al menos 3 dígitos'
+// Search handling
+const handleSearchInput = () => {
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+
+  // Clear results if input is empty
+  if (!phoneNumber.value) {
+    customer.value = null
+    showNewCustomerButton.value = false
+    searchError.value = ''
     return
   }
 
+  // Show validation message if input is too short
+  if (phoneNumber.value.length < 3) {
+    customer.value = null
+    showNewCustomerButton.value = false
+    searchError.value = phoneNumber.value.length > 0 ? 'El número de teléfono debe tener al menos 3 dígitos' : ''
+    return
+  }
+
+  // Set a new timeout for the search
+  searchTimeout.value = setTimeout(async () => {
+    await searchCustomer()
+  }, 300) // 300ms delay
+}
+
+// Search customer function
+const searchCustomer = async () => {
   console.log('Searching for customer with phone:', phoneNumber.value)
   isSearching.value = true
   searchError.value = ''
@@ -396,40 +410,7 @@ onMounted(() => {
 }
 
 .search-button-container {
-  margin-top: 0.75rem;
-}
-
-.search-btn {
-  width: 100%;
-  padding: 0.625rem;
-  background-color: #e62222;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: 500;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.search-btn:hover:not(:disabled) {
-  background-color: #d41d1d;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.search-btn:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.search-btn i {
-  font-size: 0.875rem;
+  display: none;
 }
 
 .alert {

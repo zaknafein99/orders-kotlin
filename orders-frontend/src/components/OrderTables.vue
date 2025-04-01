@@ -2,9 +2,12 @@
   <div class="order-tables">
     <div class="tables-header">
       <h2><i class="fas fa-clipboard-list"></i> Panel de Pedidos</h2>
-      <button @click="fetchOrders" class="refresh-btn">
-        <i class="fas fa-sync-alt refresh-icon"></i> Actualizar
-      </button>
+      <div class="header-actions">
+        <span class="last-update">{{ lastUpdateText }}</span>
+        <button @click="fetchOrders" class="refresh-btn">
+          <i class="fas fa-sync-alt refresh-icon"></i> Actualizar
+        </button>
+      </div>
     </div>
 
     <div v-if="isLoading" class="loading">
@@ -30,8 +33,8 @@
               <th>{{ translations.actions }}</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="order in pendingOrders" :key="order.id">
+          <TransitionGroup name="order-list" tag="tbody">
+            <tr v-for="order in sortedPendingOrders" :key="order.id">
               <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
               <td>
                 <div class="customer-info">
@@ -75,7 +78,7 @@
                 </div>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
 
@@ -96,8 +99,8 @@
               <th class="date-column">{{ translations.deliveredAt }}</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="order in deliveredOrders" :key="order.id">
+          <TransitionGroup name="order-list" tag="tbody">
+            <tr v-for="order in sortedDeliveredOrders" :key="order.id">
               <td class="date-cell">{{ formatDate(order.createdAt) }}</td>
               <td>
                 <div class="customer-info">
@@ -125,7 +128,7 @@
               </td>
               <td>{{ formatDate(order.deliveredAt) }}</td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -153,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, watch, computed } from 'vue'
 import { eventBus } from '../utils/eventBus'
 import OrderService from '../services/OrderService'
 import TruckService from '../services/TruckService'
@@ -173,11 +176,31 @@ const trucksError = ref('')
 const pendingOrders = ref([])
 const deliveredOrders = ref([])
 const isLoading = ref(false)
+const lastUpdateTime = ref(new Date())
+const pollingInterval = ref(null)
+
+// Modify the polling configuration and add a lastOrderId ref
+const POLLING_INTERVAL = 3000 // Reduce to 3 seconds for more responsive updates
+const MAX_POLLING_TIME = 5 * 60 * 1000 // 5 minutes
+const lastOrderId = ref(null)
 
 // Confirmation modal state
 const showConfirmation = ref(false)
 const orderToCancel = ref(null)
 const isCanceling = ref(false)
+
+// Add new refs for tracking changes
+const previousPendingIds = ref(new Set())
+const previousDeliveredIds = ref(new Set())
+
+// Add computed properties for sorted orders
+const sortedPendingOrders = computed(() => {
+  return [...pendingOrders.value].sort((a, b) => b.createdAt - a.createdAt)
+})
+
+const sortedDeliveredOrders = computed(() => {
+  return [...deliveredOrders.value].sort((a, b) => b.createdAt - a.createdAt)
+})
 
 const fetchTrucks = async () => {
   trucksLoading.value = true
@@ -213,9 +236,99 @@ const checkToken = () => {
   return token
 }
 
+const updateOrdersSmooth = (newPendingData, newDeliveredData) => {
+  // Convert current orders to maps for easy lookup
+  const currentPendingMap = new Map(pendingOrders.value.map(order => [order.id, order]))
+  const currentDeliveredMap = new Map(deliveredOrders.value.map(order => [order.id, order]))
+  
+  // Create sets of current IDs
+  const currentPendingIds = new Set(currentPendingMap.keys())
+  const currentDeliveredIds = new Set(currentDeliveredMap.keys())
+  
+  // Process pending orders
+  if (newPendingData && Array.isArray(newPendingData)) {
+    const newPendingOrders = newPendingData.map(order => ({
+      id: order.id,
+      customerName: order.customer.name,
+      customerPhone: order.customer.phoneNumber,
+      createdAt: new Date(order.date),
+      items: [...order.items],
+      total: order.totalPrice,
+      truck: order.truck ? {
+        id: order.truck.id,
+        name: order.truck.name
+      } : null
+    }))
+    
+    // Update only changed or new orders
+    newPendingOrders.forEach(newOrder => {
+      const existingOrder = currentPendingMap.get(newOrder.id)
+      if (!existingOrder || JSON.stringify(existingOrder) !== JSON.stringify(newOrder)) {
+        const index = pendingOrders.value.findIndex(o => o.id === newOrder.id)
+        if (index !== -1) {
+          // Update existing order
+          pendingOrders.value[index] = newOrder
+        } else {
+          // Add new order
+          pendingOrders.value.push(newOrder)
+        }
+      }
+    })
+    
+    // Remove orders that no longer exist
+    const newPendingIds = new Set(newPendingOrders.map(o => o.id))
+    pendingOrders.value = pendingOrders.value.filter(order => newPendingIds.has(order.id))
+  }
+  
+  // Process delivered orders
+  if (newDeliveredData && Array.isArray(newDeliveredData)) {
+    const newDeliveredOrders = newDeliveredData.map(order => ({
+      id: order.id,
+      customerName: order.customer.name,
+      customerPhone: order.customer.phoneNumber,
+      createdAt: new Date(order.date),
+      items: [...order.items],
+      deliveredAt: new Date(order.date),
+      total: order.totalPrice,
+      truck: order.truck ? {
+        id: order.truck.id,
+        name: order.truck.name
+      } : null
+    }))
+    
+    // Update only changed or new orders
+    newDeliveredOrders.forEach(newOrder => {
+      const existingOrder = currentDeliveredMap.get(newOrder.id)
+      if (!existingOrder || JSON.stringify(existingOrder) !== JSON.stringify(newOrder)) {
+        const index = deliveredOrders.value.findIndex(o => o.id === newOrder.id)
+        if (index !== -1) {
+          // Update existing order
+          deliveredOrders.value[index] = newOrder
+        } else {
+          // Add new order
+          deliveredOrders.value.push(newOrder)
+        }
+      }
+    })
+    
+    // Remove orders that no longer exist
+    const newDeliveredIds = new Set(newDeliveredOrders.map(o => o.id))
+    deliveredOrders.value = deliveredOrders.value.filter(order => newDeliveredIds.has(order.id))
+  }
+  
+  // Update truck assignments
+  const allOrders = [...pendingOrders.value, ...deliveredOrders.value]
+  allOrders.forEach(order => {
+    if (order.truck) {
+      orderTrucks[order.id] = String(order.truck.id)
+    } else {
+      orderTrucks[order.id] = ''
+    }
+  })
+}
+
 const fetchOrders = async () => {
-  isLoading.value = true
-  console.log('Starting to fetch orders...')
+  if (isLoading.value) return // Prevent concurrent fetches
   
   // Check if we have a token
   const token = checkToken()
@@ -223,120 +336,28 @@ const fetchOrders = async () => {
     console.error('No token found in localStorage, cannot fetch orders')
     return
   }
+
   try {
     // Fetch trucks first if not already loaded
     if (availableTrucks.value.length === 0) {
-      console.log('No trucks loaded, fetching trucks first...')
       await fetchTrucks()
     }
     
-    // Fetch pending orders using OrderService
-    console.log('Fetching pending orders...')
-    const pendingData = await OrderService.getPendingOrders()
-    console.log('Pending orders response:', pendingData, 'Type:', typeof pendingData, 'Is Array:', Array.isArray(pendingData), 'Length:', pendingData ? pendingData.length : 0)
+    // Force refresh when polling
+    const force = OrderService.isPolling
     
-    if (!pendingData || !Array.isArray(pendingData) || pendingData.length === 0) {
-      console.warn('No pending orders data received or data is not an array')
-      pendingOrders.value = []
-    } else {
-      console.log('Mapping pending orders data...')
-      console.log('First order sample:', pendingData[0])
-      console.log('First order customer:', pendingData[0].customer)
-      
-      pendingOrders.value = pendingData.map(order => {
-        console.log('Processing order:', order.id, 'Customer:', order.customer)
-        return {
-          id: order.id,
-          customerName: order.customer.name,
-          customerPhone: order.customer.phoneNumber,
-          createdAt: new Date(order.date),
-          items: order.items,
-          total: order.totalPrice,
-          truck: order.truck ? {
-            id: order.truck.id,
-            name: order.truck.name
-          } : null
-        }
-      })
-      
-      // Sort pending orders by date, newest first
-      pendingOrders.value.sort((a, b) => b.createdAt - a.createdAt)
-    }
+    // Fetch both types of orders concurrently
+    const [pendingData, deliveredData] = await Promise.all([
+      OrderService.getPendingOrders(force),
+      OrderService.getDeliveredOrders(force)
+    ])
     
-    // Fetch delivered orders using OrderService
-    console.log('Fetching delivered orders...')
-    const deliveredData = await OrderService.getDeliveredOrders()
-    console.log('Delivered orders response:', deliveredData, 'Type:', typeof deliveredData, 'Is Array:', Array.isArray(deliveredData), 'Length:', deliveredData ? deliveredData.length : 0)
+    // Use the smooth update function
+    updateOrdersSmooth(pendingData, deliveredData)
     
-    if (!deliveredData || !Array.isArray(deliveredData) || deliveredData.length === 0) {
-      console.warn('No delivered orders data received or data is not an array')
-      deliveredOrders.value = []
-    } else {
-      console.log('Mapping delivered orders data...')
-      console.log('First delivered order sample:', deliveredData[0])
-      
-      // Create a set of pending order IDs for quick lookup
-      const pendingOrderIds = new Set(pendingOrders.value.map(order => order.id))
-      console.log('Pending order IDs:', Array.from(pendingOrderIds))
-      
-      // Filter out any delivered orders that are also in pending orders
-      const filteredDeliveredData = deliveredData.filter(order => {
-        const isDuplicate = pendingOrderIds.has(order.id)
-        if (isDuplicate) {
-          console.log(`Order ID ${order.id} appears in both pending and delivered lists, excluding from delivered list`)
-        }
-        return !isDuplicate
-      })
-      
-      console.log(`Filtered out ${deliveredData.length - filteredDeliveredData.length} duplicate orders from delivered list`)
-      
-      deliveredOrders.value = filteredDeliveredData.map(order => ({
-        id: order.id,
-        customerName: order.customer.name,
-        customerPhone: order.customer.phoneNumber,
-        createdAt: new Date(order.date),
-        items: order.items,
-        deliveredAt: new Date(order.date), // Using same date since backend doesn't have delivery date
-        total: order.totalPrice,
-        truck: order.truck ? {
-          id: order.truck.id,
-          name: order.truck.name
-        } : null
-      }))
-      
-      // Sort delivered orders by date, newest first
-      deliveredOrders.value.sort((a, b) => b.createdAt - a.createdAt)
-    }
-    
-    // Initialize the orderTrucks object with current truck IDs
-    const allOrders = [...pendingOrders.value, ...deliveredOrders.value]
-    allOrders.forEach(order => {
-      if (order.truck) {
-        // Make sure to convert to string for v-model compatibility
-        orderTrucks[order.id] = String(order.truck.id)
-      } else {
-        orderTrucks[order.id] = ''
-      }
-    })
-    
-    console.log('Initialized orderTrucks:', orderTrucks)
-    
-    console.log('Orders refreshed successfully')
+    lastUpdateTime.value = new Date()
   } catch (error) {
     console.error('Error fetching orders:', error)
-    if (error.response) {
-      console.error('Error response data:', error.response.data)
-      console.error('Error response status:', error.response.status)
-      console.error('Error response headers:', error.response.headers)
-    } else if (error.request) {
-      console.error('Error request:', error.request)
-    } else {
-      console.error('Error message:', error.message)
-    }
-    console.error('Error config:', error.config)
-  } finally {
-    isLoading.value = false
-    console.log('Fetch orders completed, loading state set to false')
   }
 }
 
@@ -593,13 +614,52 @@ const confirmCancelOrder = async () => {
   }
 }
 
+const startPolling = () => {
+  // Clear any existing interval
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+  }
+  
+  // Set up new polling interval
+  pollingInterval.value = setInterval(async () => {
+    try {
+      // Only fetch if we're not already loading
+      if (!isLoading.value) {
+        console.log('Polling for new orders...')
+        // Set polling flag in OrderService
+        OrderService.isPolling = true
+        await fetchOrders()
+        lastUpdateTime.value = new Date()
+        // Reset polling flag
+        OrderService.isPolling = false
+      }
+    } catch (error) {
+      console.error('Error during polling:', error)
+      // Make sure to reset polling flag even on error
+      OrderService.isPolling = false
+    }
+  }, POLLING_INTERVAL)
+}
+
+const stopPolling = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
+  }
+}
+
 onMounted(() => {
+  // Initial fetch
   fetchOrders()
+  
+  // Start polling immediately
+  startPolling()
   
   // Set up event listeners
   eventBus.on('login-success', (token) => {
     console.log('Login success event received in OrderTables')
     fetchOrders()
+    startPolling()
   })
   
   eventBus.on('order-submitted', () => {
@@ -623,19 +683,67 @@ onMounted(() => {
   })
 })
 
-// Clean up event listeners
 onUnmounted(() => {
+  stopPolling()
   eventBus.off('login-success')
   eventBus.off('order-submitted')
+  eventBus.off('refresh-orders')
+  eventBus.off('order-canceled')
 })
+
+// Add a computed property for the last update time
+const lastUpdateText = computed(() => {
+  if (!lastUpdateTime.value) return ''
+  const now = new Date()
+  const diff = now - lastUpdateTime.value
+  const seconds = Math.floor(diff / 1000)
+  return `Última actualización: ${seconds} segundos`
+})
+
+// Add a watch effect to monitor changes in the orders
+watch([pendingOrders, deliveredOrders], () => {
+  console.log('Orders changed, updating lastOrderId')
+  const allOrders = [...pendingOrders.value, ...deliveredOrders.value]
+  const allOrderIds = allOrders.map(order => order.id)
+  if (allOrderIds.length > 0) {
+    lastOrderId.value = Math.max(...allOrderIds)
+  }
+}, { deep: true })
 </script>
 
 <style>
 /* Styles moved to /src/assets/styles/components/OrderTables.css */
 .action-buttons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.deliver-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.deliver-btn:hover {
+  background-color: #059669;
+}
+
+.deliver-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .cancel-btn {
@@ -714,5 +822,62 @@ onUnmounted(() => {
 
 .cancel-action-btn:hover {
   background-color: #d1d5db;
+}
+
+.tables-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.last-update {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  border: none;
+  border-radius: 0.375rem;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.refresh-btn:hover {
+  background-color: #e5e7eb;
+}
+
+.refresh-icon {
+  font-size: 0.875rem;
+}
+
+/* Add transition styles */
+.order-list-move,
+.order-list-enter-active,
+.order-list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.order-list-enter-from,
+.order-list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.order-list-leave-active {
+  position: absolute;
 }
 </style>

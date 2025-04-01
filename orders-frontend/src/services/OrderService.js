@@ -261,6 +261,16 @@ export default {
       const createdOrder = response.data
       console.log('Order created successfully with ID:', createdOrder.id);
       
+      // Update inventory quantities
+      this.updateInventoryQuantities(orderData.items)
+        .then(updateResults => {
+          console.log('Inventory updated for all items:', updateResults)
+        })
+        .catch(error => {
+          console.error('Error updating inventory:', error)
+          // Don't fail the order creation if inventory update fails
+        })
+      
       // Refresh order tables
       this.refreshOrders(createdOrder)
       return createdOrder
@@ -334,8 +344,110 @@ export default {
   /**
    * Mark an order as delivered
    * @param {Number} orderId Order ID
+   * @param {Number} truckId Optional truck ID if not already assigned
    * @returns {Promise} Promise with updated order data
    */
+  markOrderAsDelivered(orderId, truckId = null) {
+    console.log(`Marking order ${orderId} as delivered${truckId ? ` with truck ${truckId}` : ''}`)
+    
+    // Get the token for authorization
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('No authentication token found')
+      eventBus.emit('auth-error')
+      return Promise.reject(new Error('Authentication required'))
+    }
+    
+    console.log('Using token for deliver request:', token ? `${token.substring(0, 15)}...` : 'No token')
+    
+    // Try using the status update endpoint directly without retrieving the order first
+    console.log('Attempting to mark order as delivered using status endpoint...')
+    
+    return api.put(`/orders/${orderId}/status`, {
+      status: 'DELIVERED'
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      console.log('Order marked as delivered successfully using status endpoint:', response.data)
+      const updatedOrder = response.data
+      
+      // Try to update inventory
+      if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
+        this.updateInventoryQuantities(updatedOrder.items)
+          .then(results => {
+            console.log('Inventory updated for delivered order items:', results)
+          })
+          .catch(err => {
+            console.error('Error updating inventory:', err)
+          })
+      } else {
+        console.log('No items found in the updated order, trying to retrieve order details...')
+        // Try to get order details to update inventory
+        api.get(`/orders/${orderId}`)
+          .then(orderResponse => {
+            const orderDetails = orderResponse.data
+            if (orderDetails && orderDetails.items && orderDetails.items.length > 0) {
+              this.updateInventoryQuantities(orderDetails.items)
+                .then(results => {
+                  console.log('Inventory updated after retrieving order details:', results)
+                })
+                .catch(err => {
+                  console.error('Error updating inventory after retrieving order details:', err)
+                })
+            }
+          })
+          .catch(err => {
+            console.error('Could not retrieve order details for inventory update:', err)
+          })
+      }
+      
+      // Refresh order tables
+      this.refreshOrders(updatedOrder)
+      return updatedOrder
+    })
+    .catch(firstError => {
+      console.warn('Status update approach failed:', firstError.message)
+      console.warn('Trying direct POST to deliver endpoint...')
+      
+      // Try the deliver endpoint
+      return api.post(`/orders/${orderId}/deliver`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        console.log('Order marked as delivered successfully using deliver endpoint:', response.data)
+        const updatedOrder = response.data
+        
+        // Update inventory if possible
+        if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
+          this.updateInventoryQuantities(updatedOrder.items)
+            .then(results => {
+              console.log('Inventory updated for delivered order items:', results)
+            })
+            .catch(err => {
+              console.error('Error updating inventory:', err)
+            })
+        }
+        
+        // Refresh order tables
+        this.refreshOrders(updatedOrder)
+        return updatedOrder
+      })
+      .catch(secondError => {
+        console.error('All approaches to mark order as delivered failed')
+        console.error('First error:', firstError)
+        console.error('Second error:', secondError)
+        throw secondError
+      })
+    })
+  },
+
   /**
    * Assign a truck to an order
    * @param {Number} orderId Order ID
@@ -366,51 +478,6 @@ export default {
         this.handleAuthError(error)
         throw error
       })
-  },
-
-  /**
-   * Mark an order as delivered
-   * @param {Number} orderId Order ID
-   * @param {Number} truckId Optional truck ID if not already assigned
-   * @returns {Promise} Promise with updated order data
-   */
-  markOrderAsDelivered(orderId, truckId = null) {
-    console.log(`Marking order ${orderId} as delivered${truckId ? ` with truck ${truckId}` : ''}`)
-    
-    // Get the token for authorization
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error('No authentication token found')
-      eventBus.emit('auth-error')
-      return Promise.reject(new Error('Authentication required'))
-    }
-    
-    console.log('Using token for deliver request:', token ? `${token.substring(0, 15)}...` : 'No token')
-    
-    // The backend endpoint doesn't accept a payload, it just needs the orderId in the URL
-    // If we need to assign a truck, we should do that first in a separate call
-    
-    return api.post(`/orders/${orderId}/deliver`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => {
-      console.log('Order marked as delivered successfully:', response.data)
-      const updatedOrder = response.data
-      // Refresh order tables with a slightly longer delay for delivery
-      setTimeout(() => {
-        console.log('Refreshing orders after delivery')
-        this.refreshOrders(updatedOrder)
-      }, 800) // Slightly longer delay for delivery operations
-      return updatedOrder
-    })
-    .catch(error => {
-      console.error('Error marking order as delivered:', error.response ? error.response.data : error.message)
-      this.handleAuthError(error)
-      throw error
-    })
   },
 
   /**
@@ -473,6 +540,12 @@ export default {
         }
         
         eventBus.emit('api-error', { message: 'Invalid order data format', details: error.response.data })
+      } else if (status === 404) {
+        // Not found - log details about the request
+        console.error('Resource not found error. URL:', error.config ? error.config.url : 'No URL available')
+        console.error('Request method:', error.config ? error.config.method : 'No method available')
+        
+        eventBus.emit('api-error', { message: 'Resource not found', details: error.response.data })
       }
     } else if (error.request) {
       // The request was made but no response was received
@@ -499,29 +572,115 @@ export default {
   },
   
   /**
-   * Handle authentication errors
-   * @param {Error} error The error object from the API call
+   * Update inventory quantities after an order is created
+   * @param {Array} items Order items with quantities
+   * @returns {Promise} Promise with results of all inventory updates
    */
-  handleAuthError(error) {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.warn('Authentication error detected, attempting to handle')
+  updateInventoryQuantities(items) {
+    if (!items || !items.length) {
+      console.log('No items to update inventory for')
+      return Promise.resolve([])
+    }
+    
+    const token = AuthService.getToken()
+    if (!token) {
+      console.error('No authentication token found')
+      eventBus.emit('auth-error')
+      return Promise.reject(new Error('Authentication required'))
+    }
+    
+    console.log('Updating inventory quantities for items:', items)
+    
+    // Create an array of promises for each item update
+    const updatePromises = items.map(item => {
+      // Extract the item ID and quantity based on the data structure
+      // Handle different possible formats:
+      // 1. Direct format: { id: 123, name: 'Item', quantity: 5 }
+      // 2. Nested item format: { item: { id: 123, name: 'Item' }, quantity: 5 }
+      // 3. Nested id format: { itemId: 123, quantity: 5 }
+      const itemId = item.id || (item.item && item.item.id) || item.itemId
+      const itemName = item.name || (item.item && item.item.name) || 'Unknown Item'
+      const itemQuantity = item.quantity || 0
       
-      // Get the current token
-      const token = localStorage.getItem('token')
-      if (!token) {
-        console.error('No token found in localStorage')
-        eventBus.emit('auth-error')
-        return
+      console.log(`Processing item for inventory update: ID=${itemId}, Name=${itemName}, Quantity=${itemQuantity}`)
+      
+      if (!itemId) {
+        console.error('Cannot update inventory for item without ID:', item)
+        return Promise.resolve({
+          error: 'Invalid item format - missing ID',
+          item
+        })
       }
       
-      console.log('Current token:', token.substring(0, 15) + '...')
-      console.log('Attempting to refresh authentication before logging out')
-      
-      // Try to refresh the token if the backend supports it
-      // For now, we'll just clear the token and emit the auth error
-      // This could be enhanced to use a refresh token if available
-      localStorage.removeItem('token')
-      eventBus.emit('auth-error')
-    }
+      // First, get the current item to retrieve its properties and current quantity
+      return api.get(`/item/list?page=0&size=100&sort=id,asc`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(response => {
+        let itemData = null;
+        
+        if (response.data && response.data.content) {
+          // Find the item in the paginated response
+          itemData = response.data.content.find(i => i.id === itemId);
+        } else if (Array.isArray(response.data)) {
+          // Find the item in the array response
+          itemData = response.data.find(i => i.id === itemId);
+        }
+        
+        if (!itemData) {
+          console.error(`Item with ID ${itemId} not found in inventory list`);
+          throw new Error(`Item with ID ${itemId} not found`);
+        }
+        
+        console.log(`Found item ${itemId} in inventory:`, itemData);
+        
+        // Calculate the new quantity by subtracting the order quantity
+        const currentQuantity = itemData.quantity || 0;
+        const newQuantity = Math.max(0, currentQuantity - itemQuantity);
+        
+        console.log(`Updating inventory for item ${itemId} (${itemName}): ${currentQuantity} - ${itemQuantity} = ${newQuantity}`);
+        
+        // Prepare the updated item with all required fields
+        const updatedItem = {
+          id: itemId,
+          name: itemData.name,
+          description: itemData.description || "",
+          price: Number(itemData.price),
+          quantity: newQuantity,
+          category: itemData.category || "Uncategorized"
+        };
+        
+        // Update the item with the PUT endpoint
+        return api.put(`/item/${itemId}`, updatedItem, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(updateResponse => {
+          console.log(`Inventory updated for item ${itemId} using PUT:`, updateResponse.data);
+          return updateResponse.data;
+        });
+      })
+      .catch(error => {
+        console.error(`Error updating inventory for item ${itemId}:`, error);
+        console.error('Request details:', {
+          url: `/item/${itemId}`,
+          method: 'PUT',
+          error: error.message
+        });
+        
+        // Don't reject the whole promise chain, just return the error
+        return {
+          itemId: itemId,
+          name: itemName,
+          error: error.message || 'Unknown error'
+        };
+      });
+    });
+    
+    return Promise.all(updatePromises);
   }
 }

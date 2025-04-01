@@ -52,6 +52,22 @@
         </div>
       </div>
       
+      <!-- Inventory alerts -->
+      <div v-if="inventoryAlerts.length > 0" class="inventory-alerts">
+        <div class="inventory-alert-title">
+          <i class="fas fa-exclamation-triangle"></i>
+          Advertencias de inventario
+        </div>
+        <div v-for="alert in inventoryAlerts" :key="alert.id" class="inventory-alert">
+          <p>
+            <strong>{{ alert.name }}:</strong> 
+            Solicitando <span class="alert-requested">{{ alert.requested }}</span> unidades, 
+            pero solo hay <span class="alert-available">{{ alert.available }}</span> disponibles.
+          </p>
+        </div>
+        <p class="inventory-note">La orden podrá procesarse de todas formas.</p>
+      </div>
+      
       <!-- Order summary -->
       <div class="order-total-section">
         <div class="order-total">
@@ -112,6 +128,10 @@ const props = defineProps({
   successMessage: {
     type: String,
     default: ''
+  },
+  inventoryAlerts: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -337,5 +357,50 @@ select, input[type="date"] {
   background-color: #e8f5e9;
   padding: 10px;
   border-radius: 4px;
+}
+
+/* Inventory alerts styles */
+.inventory-alerts {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: #fff3cd;
+  border-left: 4px solid #fbbf24;
+  border-radius: 4px;
+}
+
+.inventory-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.inventory-alert {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.inventory-alert p {
+  margin: 0.25rem 0;
+}
+
+.alert-requested {
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.alert-available {
+  font-weight: 600;
+  color: #166534;
+}
+
+.inventory-note {
+  font-style: italic;
+  font-size: 0.75rem;
+  color: #57534e;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 </style>

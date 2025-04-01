@@ -52,6 +52,10 @@ const showLayout = computed(() => {
             <i class="fas fa-shopping-cart"></i>
             Orders
           </router-link>
+          <router-link to="/items" class="nav-link">
+            <i class="fas fa-box"></i>
+            {{ $t('inventory') }}
+          </router-link>
         </nav>
         <div class="header-actions">
           <button class="create-order-btn" @click="$router.push('/orders/new')">

@@ -44,6 +44,15 @@
         <div class="item-category" v-if="item.category">
           Categoría: {{ item.category }}
         </div>
+        <div class="item-inventory" :class="getInventoryStatusClass(item)">
+          <i :class="getInventoryIcon(item)"></i>
+          <span>
+            Disponible: {{ item.quantity || 0 }}
+            <span v-if="item.inventoryAfterOrder !== undefined && item.inventoryAfterOrder !== item.quantity" class="inventory-projection">
+              (Después de la orden: {{ item.inventoryAfterOrder }})
+            </span>
+          </span>
+        </div>
         <div class="item-actions">
           <div class="quantity-control">
             <button @click="decrementQuantity(item)" class="quantity-btn" :disabled="getItemQuantity(item.id) <= 0">
@@ -140,8 +149,56 @@ const addToOrder = (item) => {
   // Reset quantity
   itemQuantities[item.id] = 0
 }
+
+const getInventoryStatusClass = (item) => {
+  if (item.quantity <= 0) {
+    return 'out-of-stock'
+  } else if (item.quantity <= 5) {
+    return 'low-stock'
+  } else {
+    return 'in-stock'
+  }
+}
+
+const getInventoryIcon = (item) => {
+  if (item.quantity <= 0) {
+    return 'fa-times-circle'
+  } else if (item.quantity <= 5) {
+    return 'fa-exclamation-circle'
+  } else {
+    return 'fa-check-circle'
+  }
+}
 </script>
 
 <style>
 /* Styles moved to /src/assets/styles/components/ItemSelector.css */
+
+/* Inventory status styles */
+.item-inventory {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  gap: 0.25rem;
+}
+
+.in-stock {
+  color: #16a34a; /* Green */
+}
+
+.low-stock {
+  color: #ca8a04; /* Amber/Orange */
+}
+
+.out-of-stock {
+  color: #dc2626; /* Red */
+}
+
+.inventory-projection {
+  font-style: italic;
+  margin-left: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280; /* Gray */
+}
 </style>

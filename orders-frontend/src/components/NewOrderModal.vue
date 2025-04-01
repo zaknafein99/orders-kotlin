@@ -44,6 +44,7 @@
             :is-submitting="isSubmittingOrder"
             :error="orderError"
             :success-message="orderSuccess"
+            :inventory-alerts="inventoryAlerts"
             @remove-item="removeFromOrder"
             @submit="submitOrder"
             @update-truck="updateTruck"
@@ -158,6 +159,9 @@ const orderSuccess = ref('')
 // Item quantities for UI
 const itemQuantities = reactive({})
 
+// Inventory alerts state
+const inventoryAlerts = ref([])
+
 // Computed properties
 const todayFormatted = computed(() => {
   return new Date().toISOString().split('T')[0]
@@ -172,6 +176,9 @@ const closeModal = () => {
   Object.keys(itemQuantities).forEach(key => {
     itemQuantities[key] = 0
   })
+  
+  // Clear alerts
+  inventoryAlerts.value = []
   
   orderError.value = ''
   orderSuccess.value = ''
@@ -262,6 +269,44 @@ const addToOrder = (item) => {
   // Check if item already exists in order
   const existingItemIndex = currentOrder.items.findIndex(i => i.id === item.id)
   
+  // Find the original item from available items to check quantity
+  const originalItem = availableItems.value.find(i => i.id === item.id)
+  const currentInventory = originalItem ? originalItem.quantity || 0 : 0
+  
+  // Calculate requested quantity
+  let requestedQuantity = item.quantity
+  if (existingItemIndex >= 0) {
+    requestedQuantity += currentOrder.items[existingItemIndex].quantity
+  }
+  
+  // Check if we're exceeding available inventory
+  if (requestedQuantity > currentInventory) {
+    // Show warning but proceed with adding to order
+    const warningMessage = {
+      id: item.id,
+      name: item.name,
+      available: currentInventory,
+      requested: requestedQuantity,
+      message: `Advertencia: Solicitando ${requestedQuantity} unidades de "${item.name}" pero solo hay ${currentInventory} disponibles.`
+    }
+    
+    // Check if we already have an alert for this item
+    const existingAlertIndex = inventoryAlerts.value.findIndex(alert => alert.id === item.id)
+    if (existingAlertIndex >= 0) {
+      // Update existing alert
+      inventoryAlerts.value[existingAlertIndex] = warningMessage
+    } else {
+      // Add new alert
+      inventoryAlerts.value.push(warningMessage)
+    }
+    
+    console.warn(`Inventory warning: Requesting ${requestedQuantity} units of "${item.name}" but only ${currentInventory} available.`)
+  } else {
+    // Remove any existing alerts for this item
+    inventoryAlerts.value = inventoryAlerts.value.filter(alert => alert.id !== item.id)
+  }
+  
+  // Add to order regardless of inventory level
   if (existingItemIndex >= 0) {
     // Update existing item
     currentOrder.items[existingItemIndex].quantity += item.quantity
@@ -269,10 +314,58 @@ const addToOrder = (item) => {
     // Add new item
     currentOrder.items.push(item)
   }
+  
+  // Update the UI to reflect the inventory change
+  if (originalItem) {
+    // Update the displayed inventory (but don't actually commit this change to backend yet)
+    originalItem.inventoryAfterOrder = Math.max(0, currentInventory - requestedQuantity)
+  }
 }
 
 const removeFromOrder = (index) => {
+  const removedItem = currentOrder.items[index]
+  
+  // Remove the item from the order
   currentOrder.items.splice(index, 1)
+  
+  // Find the original item in the available items list
+  const originalItem = availableItems.value.find(i => i.id === removedItem.id)
+  
+  if (originalItem) {
+    // Update the inventory projection
+    if (originalItem.inventoryAfterOrder !== undefined) {
+      originalItem.inventoryAfterOrder = Math.min(
+        originalItem.quantity,
+        (originalItem.inventoryAfterOrder || 0) + removedItem.quantity
+      )
+      
+      // If inventory is now sufficient, remove any alert
+      if (originalItem.inventoryAfterOrder >= originalItem.quantity) {
+        inventoryAlerts.value = inventoryAlerts.value.filter(alert => alert.id !== removedItem.id)
+      } else {
+        // Otherwise, update the alert if it exists
+        const alertIndex = inventoryAlerts.value.findIndex(alert => alert.id === removedItem.id)
+        if (alertIndex >= 0) {
+          // Calculate new requested quantity after removal
+          const remainingQuantity = currentOrder.items
+            .filter(item => item.id === removedItem.id)
+            .reduce((sum, item) => sum + item.quantity, 0)
+          
+          if (remainingQuantity > 0) {
+            // Update the alert with new quantities
+            inventoryAlerts.value[alertIndex] = {
+              ...inventoryAlerts.value[alertIndex],
+              requested: remainingQuantity,
+              message: `Advertencia: Solicitando ${remainingQuantity} unidades de "${removedItem.name}" pero solo hay ${originalItem.quantity} disponibles.`
+            }
+          } else {
+            // No more of this item in the order, remove the alert
+            inventoryAlerts.value.splice(alertIndex, 1)
+          }
+        }
+      }
+    }
+  }
 }
 
 // Additional methods for OrderSummary component
@@ -305,6 +398,11 @@ const submitOrder = async () => {
     orderError.value = ''
     orderSuccess.value = ''
 
+    // Log inventory warnings if any
+    if (inventoryAlerts.value.length > 0) {
+      console.warn('Order contains items with insufficient inventory:', inventoryAlerts.value)
+    }
+
     console.log('Creating order with data:', {
       customer: props.customer,
       items: currentOrder.items,
@@ -332,9 +430,19 @@ const submitOrder = async () => {
     const response = await OrderService.createOrder(orderData)
     console.log('Order created successfully:', response)
 
-    orderSuccess.value = 'Orden creada exitosamente'
-    emit('order-created', response)
-    closeModal()
+    // Set success message with inventory update note
+    const hadInventoryWarnings = inventoryAlerts.value.length > 0
+    orderSuccess.value = hadInventoryWarnings
+      ? 'Orden creada exitosamente. El inventario ha sido actualizado, incluyendo items con existencias insuficientes.'
+      : 'Orden creada exitosamente. El inventario ha sido actualizado.'
+    
+    // Reset inventory alerts
+    inventoryAlerts.value = []
+    
+    setTimeout(() => {
+      emit('order-created', response)
+      closeModal()
+    }, 2000) // Show success message for 2 seconds before closing
   } catch (error) {
     console.error('Error creating order:', error)
     orderError.value = error.response?.data?.message || 'Error al crear la orden'
@@ -398,6 +506,7 @@ watch(() => props.show, (newVal) => {
     orderError.value = ''
     orderSuccess.value = ''
     currentPage.value = 0
+    inventoryAlerts.value = []
     
     // Fetch items and trucks
     Promise.all([

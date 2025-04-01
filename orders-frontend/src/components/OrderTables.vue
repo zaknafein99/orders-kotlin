@@ -58,13 +58,21 @@
                 </div>
               </td>
               <td>
-                <button 
-                  @click="markAsDelivered(order.id)" 
-                  class="action-btn deliver-btn"
-                  :disabled="!order.truck && !orderTrucks[order.id]"
-                >
-                  <i class="fas fa-truck"></i> {{ translations.markDelivered }}
-                </button>
+                <div class="action-buttons">
+                  <button 
+                    @click="markAsDelivered(order.id)" 
+                    class="action-btn deliver-btn"
+                    :disabled="!order.truck && !orderTrucks[order.id]"
+                  >
+                    <i class="fas fa-truck"></i> {{ translations.markDelivered }}
+                  </button>
+                  <button 
+                    @click="showCancelConfirmation(order.id)" 
+                    class="action-btn cancel-btn"
+                  >
+                    <i class="fas fa-times-circle"></i> {{ translations.cancelOrder || 'Cancelar' }}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -122,6 +130,26 @@
       </div>
     </div>
   </div>
+  
+  <!-- Confirmation Modal -->
+  <div v-if="showConfirmation" class="modal-backdrop">
+    <div class="confirmation-modal">
+      <h3 class="confirmation-modal-title">
+        <i class="fas fa-exclamation-triangle"></i> Cancelar Pedido
+      </h3>
+      <p class="confirmation-modal-message">
+        ¿Está seguro que desea cancelar este pedido? Esta acción no se puede deshacer y el pedido será eliminado permanentemente.
+      </p>
+      <div class="confirmation-modal-actions">
+        <button @click="hideConfirmation" class="cancel-action-btn">
+          No, mantener pedido
+        </button>
+        <button @click="confirmCancelOrder" class="confirm-cancel-btn">
+          Sí, cancelar pedido
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -145,6 +173,11 @@ const trucksError = ref('')
 const pendingOrders = ref([])
 const deliveredOrders = ref([])
 const isLoading = ref(false)
+
+// Confirmation modal state
+const showConfirmation = ref(false)
+const orderToCancel = ref(null)
+const isCanceling = ref(false)
 
 const fetchTrucks = async () => {
   trucksLoading.value = true
@@ -482,6 +515,84 @@ const markAsDelivered = async (orderId) => {
   }
 }
 
+const showCancelConfirmation = (orderId) => {
+  orderToCancel.value = orderId
+  showConfirmation.value = true
+}
+
+const hideConfirmation = () => {
+  showConfirmation.value = false
+  orderToCancel.value = null
+}
+
+const confirmCancelOrder = async () => {
+  if (!orderToCancel.value) return
+  
+  try {
+    isCanceling.value = true
+    console.log('Canceling order:', orderToCancel.value)
+    
+    // Add a loading indicator to the button
+    const btnElement = document.querySelector('.confirm-cancel-btn')
+    if (btnElement) {
+      btnElement.textContent = 'Cancelando...'
+      btnElement.disabled = true
+    }
+    
+    // Call the API to cancel the order
+    const response = await OrderService.cancelOrder(orderToCancel.value)
+    console.log('Cancel order response:', response)
+    
+    // Hide the confirmation modal
+    hideConfirmation()
+    
+    // Show success message
+    alert(translations.orderCanceled || 'Pedido cancelado exitosamente')
+    
+  } catch (error) {
+    console.error('Error canceling order:', error)
+    
+    // Create a more user-friendly error message
+    let errorMessage = translations.orderCancelError || 'Error al cancelar el pedido'
+    
+    if (error.message && error.message.includes('delivered')) {
+      errorMessage = 'No se puede cancelar un pedido que ya ha sido entregado'
+    } else if (error.message && error.message.includes('not found')) {
+      errorMessage = `${translations.orderNotFound || 'Pedido no encontrado'}: ${orderToCancel.value}`
+    } else if (error.response) {
+      if (error.response.status === 404) {
+        errorMessage += ': ' + (translations.orderNotFound || 'No se encontró el pedido')
+      } else if (error.response.status === 403) {
+        errorMessage += ': ' + (translations.permissionDenied || 'No tiene permisos para cancelar este pedido')
+      } else if (error.response.data && error.response.data.message) {
+        errorMessage += ': ' + error.response.data.message
+      } else if (error.response.data && error.response.data.detail) {
+        errorMessage += ': ' + error.response.data.detail
+      }
+    } else if (error.message) {
+      errorMessage += ': ' + error.message
+    }
+    
+    // Show error message
+    alert(errorMessage)
+    
+    // Don't close the modal on error if the order still exists
+    const orderStillExists = pendingOrders.value.some(order => order.id === orderToCancel.value)
+    if (!orderStillExists) {
+      hideConfirmation()
+    }
+  } finally {
+    isCanceling.value = false
+    
+    // Reset the button state
+    const btnElement = document.querySelector('.confirm-cancel-btn')
+    if (btnElement) {
+      btnElement.textContent = 'Sí, cancelar pedido'
+      btnElement.disabled = false
+    }
+  }
+}
+
 onMounted(() => {
   fetchOrders()
   
@@ -495,6 +606,21 @@ onMounted(() => {
     console.log('Order submitted event received in OrderTables')
     fetchOrders()
   })
+  
+  eventBus.on('refresh-orders', () => {
+    console.log('Refresh orders event received in OrderTables')
+    fetchOrders()
+  })
+  
+  eventBus.on('order-canceled', (orderId) => {
+    console.log('Order canceled event received in OrderTables for order:', orderId)
+    // Remove the order from the pending orders list if it exists
+    const orderIndex = pendingOrders.value.findIndex(order => order.id === parseInt(orderId))
+    if (orderIndex !== -1) {
+      pendingOrders.value.splice(orderIndex, 1)
+      console.log(`Removed order ${orderId} from pending orders list`)
+    }
+  })
 })
 
 // Clean up event listeners
@@ -506,4 +632,87 @@ onUnmounted(() => {
 
 <style>
 /* Styles moved to /src/assets/styles/components/OrderTables.css */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cancel-btn {
+  background-color: #f87171;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #ef4444;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.confirmation-modal {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1001;
+}
+
+.confirmation-modal-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #ef4444;
+}
+
+.confirmation-modal-message {
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+}
+
+.confirmation-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-cancel-btn {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.confirm-cancel-btn:hover {
+  background-color: #dc2626;
+}
+
+.cancel-action-btn {
+  background-color: #e5e7eb;
+  color: #374151;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.cancel-action-btn:hover {
+  background-color: #d1d5db;
+}
 </style>

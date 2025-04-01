@@ -9,10 +9,18 @@ import api from './api'
 export default {
   /**
    * Fetch all pending orders
+   * @param {Boolean} force Force a fresh fetch from the server (ignore cache)
    * @returns {Promise} Promise with pending orders data
    */
-  getPendingOrders() {
-    console.log('Fetching pending orders from API')
+  getPendingOrders(force = false) {
+    console.log('Fetching pending orders from API', force ? '(forced refresh)' : '')
+    
+    // Use cached orders if available and not forcing refresh
+    if (this.cachedPendingOrders && !force) {
+      console.log('Using cached pending orders:', this.cachedPendingOrders.length)
+      return Promise.resolve(this.cachedPendingOrders)
+    }
+    
     const token = localStorage.getItem('token')
     console.log('Using token for orders request:', token ? `${token.substring(0, 15)}...` : 'No token')
     
@@ -67,6 +75,9 @@ export default {
       });
       
       console.log(`Filtered out ${ordersData.length - pendingOrders.length} delivered orders from pending list`);
+      
+      // Cache the orders
+      this.cachedPendingOrders = pendingOrders;
       return pendingOrders;
     })
     .catch(error => {
@@ -87,15 +98,23 @@ export default {
 
   /**
    * Fetch all delivered orders
+   * @param {Boolean} force Force a fresh fetch from the server (ignore cache)
    * @returns {Promise} Promise with delivered orders data
    */
-  getDeliveredOrders() {
-    console.log('Fetching delivered orders from API')
+  getDeliveredOrders(force = false) {
+    console.log('Fetching delivered orders from API', force ? '(forced refresh)' : '')
+    
+    // Use cached orders if available and not forcing refresh
+    if (this.cachedDeliveredOrders && !force) {
+      console.log('Using cached delivered orders:', this.cachedDeliveredOrders.length)
+      return Promise.resolve(this.cachedDeliveredOrders)
+    }
+    
     const token = localStorage.getItem('token')
     console.log('Using token for delivered orders request:', token ? `${token.substring(0, 15)}...` : 'No token')
     
     // Use a query parameter to specifically request delivered orders
-    return api.get('/orders?status=DELIVERED', {
+    return api.get('/orders/delivered', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -106,12 +125,14 @@ export default {
       console.log('Delivered orders response data type:', typeof response.data)
       console.log('Delivered orders response full data:', JSON.stringify(response.data, null, 2))
       
+      let deliveredOrders = [];
+      
       if (response.data && response.data.content) {
         console.log('Delivered orders content found, returning content array with length:', response.data.content.length)
-        return response.data.content
+        deliveredOrders = response.data.content;
       } else if (Array.isArray(response.data)) {
         console.log('Delivered orders response data is an array, returning directly with length:', response.data.length)
-        return response.data
+        deliveredOrders = response.data;
       } else {
         console.log('Delivered orders response data is not in expected format, attempting to parse')
         // Try to handle different response formats
@@ -120,19 +141,20 @@ export default {
           const possibleArrays = Object.values(response.data).filter(val => Array.isArray(val))
           if (possibleArrays.length > 0) {
             console.log('Found array in delivered orders response object, using first array with length:', possibleArrays[0].length)
-            return possibleArrays[0]
+            deliveredOrders = possibleArrays[0];
           }
           
           // If it looks like a single order, wrap it in an array
           if (response.data.id && response.data.customer) {
             console.log('Delivered orders response appears to be a single order, wrapping in array')
-            return [response.data]
+            deliveredOrders = [response.data];
           }
         }
-        
-        console.warn('Could not find delivered orders data in response, returning empty array')
-        return []
       }
+      
+      // Cache the orders
+      this.cachedDeliveredOrders = deliveredOrders;
+      return deliveredOrders;
     })
     .catch(error => {
       console.error('Error fetching delivered orders:', error)
@@ -553,16 +575,25 @@ export default {
   },
   
   /**
-   * Trigger a refresh of the orders tables
-   * @param {Object} order Optional order object that was just created or updated
+   * Refresh both pending and delivered orders
+   * Helper method to refresh the UI after changes
    */
-  refreshOrders(order = null) {
-    console.log('Refreshing orders tables with new order ID:', order?.id)
-    // Force a small delay to ensure the backend has processed the order
-    setTimeout(() => {
-      console.log('Emitting order-submitted event to refresh tables')
-      eventBus.emit('order-submitted', order)
-    }, 500) // 500ms delay to ensure backend processing is complete
+  refreshOrders() {
+    console.log('Refreshing orders...');
+    // Explicitly clear the cached orders to force a fresh fetch
+    console.log('Clearing cached pending and delivered orders');
+    this.cachedPendingOrders = null;
+    this.cachedDeliveredOrders = null;
+    
+    // Emit an event to trigger a refresh in UI components
+    eventBus.emit('refresh-orders');
+    
+    // Force a refresh of the cached orders
+    this.getPendingOrders(true)
+      .catch(error => console.error('Error refreshing pending orders:', error));
+    
+    this.getDeliveredOrders(true)
+      .catch(error => console.error('Error refreshing delivered orders:', error));
   },
   
   /**
@@ -658,27 +689,140 @@ export default {
           }
         })
         .then(updateResponse => {
-          console.log(`Inventory updated for item ${itemId} using PUT:`, updateResponse.data);
+          console.log(`Inventory updated for item ${itemId} using PUT: ${updateResponse.data}`);
           return updateResponse.data;
+        })
+        .catch(error => {
+          console.error(`Error updating inventory for item ${itemId}:`, error);
+          console.error('Request details:', {
+            url: `/item/${itemId}`,
+            method: 'PUT',
+            error: error.message
+          });
+          
+          // Don't reject the whole promise chain, just return the error
+          return {
+            itemId: itemId,
+            name: itemName,
+            error: error.message || 'Unknown error'
+          };
+        });
+      })
+    })
+    
+    return Promise.all(updatePromises);
+  },
+
+  /**
+   * Cancel an order by deleting it from the database
+   * @param {Number} orderId The ID of the order to cancel
+   * @returns {Promise} Promise with the result of the cancellation
+   */
+  cancelOrder(orderId) {
+    if (!orderId) {
+      return Promise.reject(new Error('Order ID is required'));
+    }
+
+    console.log(`Canceling order with ID: ${orderId}`);
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      console.error('No authentication token found');
+      eventBus.emit('auth-error');
+      return Promise.reject(new Error('Authentication required'));
+    }
+
+    // First, get the order to make sure it exists
+    return this.getOrderDetails(orderId)
+      .then(order => {
+        if (!order) {
+          throw new Error(`Order with ID ${orderId} not found`);
+        }
+        
+        console.log(`Found order ${orderId}, status: ${order.status}`);
+        
+        // If order is already delivered, don't allow cancellation
+        if (order.status === 'DELIVERED') {
+          throw new Error('Cannot cancel an order that has already been delivered');
+        }
+        
+        // Make an actual DELETE call to the API to cancel the order
+        return api.delete(`/orders/${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(() => {
+          console.log(`Order ${orderId} canceled successfully on the backend`);
+          // After successful backend deletion, update the UI
+          return this.removeOrderLocally(orderId);
+        })
+        .catch(error => {
+          console.error(`Error deleting order ${orderId} on the backend:`, error);
+          throw error;
         });
       })
       .catch(error => {
-        console.error(`Error updating inventory for item ${itemId}:`, error);
-        console.error('Request details:', {
-          url: `/item/${itemId}`,
-          method: 'PUT',
-          error: error.message
-        });
-        
-        // Don't reject the whole promise chain, just return the error
-        return {
-          itemId: itemId,
-          name: itemName,
-          error: error.message || 'Unknown error'
-        };
+        console.error(`Error in cancelOrder for order ${orderId}:`, error);
+        // If we can't get the order, assume it doesn't exist
+        if (error.response && error.response.status === 404) {
+          // The order doesn't exist in the backend, so we can just remove it locally
+          this.removeOrderLocally(orderId);
+          return { success: true, message: `Order ${orderId} removed from UI` };
+        }
+        throw error;
       });
-    });
+  },
+  
+  /**
+   * Get details of a specific order
+   * @param {Number} orderId The order ID
+   * @returns {Promise<Object>} Promise with the order details
+   */
+  getOrderDetails(orderId) {
+    console.log(`Getting details for order ${orderId}`);
+    const token = localStorage.getItem('token');
     
-    return Promise.all(updatePromises);
+    if (!token) {
+      console.error('No authentication token found');
+      eventBus.emit('auth-error');
+      return Promise.reject(new Error('Authentication required'));
+    }
+    
+    // Try to find the order in the pending orders
+    return this.getPendingOrders()
+      .then(pendingOrders => {
+        console.log(`Checking ${pendingOrders.length} pending orders for ID ${orderId}`);
+        const order = pendingOrders.find(o => o.id === parseInt(orderId));
+        if (order) {
+          return order;
+        }
+        
+        // If not found in pending, check delivered orders
+        return this.getDeliveredOrders()
+          .then(deliveredOrders => {
+            console.log(`Checking ${deliveredOrders.length} delivered orders for ID ${orderId}`);
+            const order = deliveredOrders.find(o => o.id === parseInt(orderId));
+            if (order) {
+              return order;
+            }
+            
+            throw { response: { status: 404 } };
+          });
+      });
+  },
+  
+  /**
+   * Remove an order from local state and refresh the UI
+   * @param {Number} orderId The order ID to remove
+   * @returns {Promise<Object>} Promise that resolves when the UI is updated
+   */
+  removeOrderLocally(orderId) {
+    console.log(`Removing order ${orderId} from local state`);
+    // Emit an event to notify components that an order has been canceled
+    eventBus.emit('order-canceled', orderId);
+    // Refresh orders to ensure UI is in sync
+    this.refreshOrders();
+    return Promise.resolve({ success: true, message: `Order ${orderId} canceled` });
   }
 }

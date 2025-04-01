@@ -53,7 +53,10 @@ class OrderService(
     }
 
     fun getPendingOrders(): List<OrderDTO> {
-        return orderRepository.findByStatus(OrderStatus.PENDING).map { orderMapper.toDto(it) }
+        println("Fetching all pending orders from repository")
+        val pendingOrders = orderRepository.findByStatus(OrderStatus.PENDING)
+        println("Found ${pendingOrders.size} pending orders: ${pendingOrders.map { it.id }}")
+        return pendingOrders.map { orderMapper.toDto(it) }
     }
 
     fun getDeliveredOrders(): List<OrderDTO> {
@@ -112,5 +115,27 @@ class OrderService(
 
         val updatedOrder = order.copy(truck = truck)
         return orderMapper.toDto(orderRepository.save(updatedOrder))
+    }
+
+    fun markAsDelivered(orderId: Int): OrderDTO {
+        return markOrderAsDelivered(orderId)
+    }
+
+    fun deleteOrder(orderId: Int) {
+        println("Attempting to delete order with ID: $orderId")
+        val order = orderRepository.findById(orderId).orElseThrow {
+            val errorMessage = "Order not found with ID $orderId"
+            println(errorMessage)
+            EntityNotFoundException(errorMessage)
+        }
+        println("Found order to delete: ${order.id}, status: ${order.status}")
+        try {
+            orderRepository.delete(order)
+            println("Order $orderId successfully deleted from repository")
+        } catch (e: Exception) {
+            println("Error deleting order $orderId: ${e.message}")
+            e.printStackTrace()
+            throw e
+        }
     }
 }

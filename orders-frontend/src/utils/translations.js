@@ -26,6 +26,7 @@ export const messages = {
     createdAt: 'Created At',
     actions: 'Actions',
     noOrders: 'No orders found',
+    cancelOrder: 'Cancel Order',
     // New Order
     newOrder: 'New Order',
     selectCustomer: 'Select a customer',
@@ -89,6 +90,7 @@ export const messages = {
     createdAt: 'Fecha de Creación',
     actions: 'Acciones',
     noOrders: 'No se encontraron pedidos',
+    cancelOrder: 'Cancelar Pedido',
     // New Order
     newOrder: 'Nuevo Pedido',
     selectCustomer: 'Seleccionar cliente',
@@ -193,16 +195,21 @@ export const messages = {
     submit: 'Enviar',
     submitting: 'Enviando...',
     cancel: 'Cancelar',
+    cancelOrder: 'Cancelar Pedido',
     
     // Messages
     orderCreated: 'Pedido creado exitosamente',
     orderUpdated: 'Pedido actualizado exitosamente',
     orderDelivered: 'Pedido marcado como entregado',
+    orderCanceled: 'Pedido cancelado exitosamente',
     
     // Errors
     networkError: 'Error de red. Por favor, verifica tu conexión',
     unexpectedError: 'Error inesperado',
-    authError: 'Error de autenticación. Por favor, inicia sesión nuevamente'
+    authError: 'Error de autenticación. Por favor, inicia sesión nuevamente',
+    orderCancelError: 'Error al cancelar el pedido',
+    orderNotFound: 'Pedido no encontrado',
+    permissionDenied: 'No tienes permisos para realizar esta acción'
   },
   en: {
     // App header and general
@@ -287,16 +294,21 @@ export const messages = {
     submit: 'Submit',
     submitting: 'Submitting...',
     cancel: 'Cancel',
+    cancelOrder: 'Cancel Order',
     
     // Messages
     orderCreated: 'Order created successfully',
     orderUpdated: 'Order updated successfully',
     orderDelivered: 'Order marked as delivered',
+    orderCanceled: 'Order canceled successfully',
     
     // Errors
     networkError: 'Network error. Please check your connection',
     unexpectedError: 'Unexpected error',
-    authError: 'Authentication error. Please log in again'
+    authError: 'Authentication error. Please log in again',
+    orderCancelError: 'Error canceling the order',
+    orderNotFound: 'Order not found',
+    permissionDenied: 'You don\'t have permission to perform this action'
   }
 }
 

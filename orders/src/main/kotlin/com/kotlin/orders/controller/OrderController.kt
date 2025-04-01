@@ -14,11 +14,15 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/orders")
 @CrossOrigin
 class OrderController(val orderService: OrderService) {
+
+    private val logger: Logger = LoggerFactory.getLogger(OrderController::class.java)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -43,7 +47,14 @@ class OrderController(val orderService: OrderService) {
     @PostMapping("/{orderId}/deliver")
     @ResponseStatus(HttpStatus.OK)
     fun markOrderAsDelivered(@PathVariable orderId: Int): OrderDTO =
-        orderService.markOrderAsDelivered(orderId)
+        orderService.markAsDelivered(orderId)
+
+    @DeleteMapping("/{orderId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun cancelOrder(@PathVariable orderId: Int) {
+        logger.info("Received request to cancel order: $orderId")
+        orderService.deleteOrder(orderId)
+    }
 
     @GetMapping("/customer")
     @ResponseStatus(HttpStatus.OK)

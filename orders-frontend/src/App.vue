@@ -26,19 +26,18 @@ const showLayout = computed(() => {
 </script>
 
 <template>
-  
-  
   <!-- Login page doesn't use the layout -->
   <router-view v-if="!showLayout" />
   
   <!-- Main layout for authenticated pages -->
-  <div v-else class="min-h-screen flex flex-col bg-slate-50">
+  <div v-else class="app-container">
     <!-- Header -->
     <header class="header">
       <div class="header-content">
         <router-link to="/" class="logo-container">
           <img src="@/assets/images/acodike-logo.svg" alt="Acodike Supergas" class="logo" />
         </router-link>
+        
         <nav class="nav-links">
           <router-link to="/dashboard" class="nav-link">
             <i class="fas fa-chart-line"></i>
@@ -57,6 +56,7 @@ const showLayout = computed(() => {
             Inventario
           </router-link>
         </nav>
+
         <div class="header-actions">
           <button class="create-order-btn" @click="$router.push('/orders/new')">
             <i class="fas fa-plus"></i>
@@ -68,20 +68,18 @@ const showLayout = computed(() => {
         </div>
       </div>
     </header>
-    
-    <!-- Main content -->
-    <main class="main-content">
-      <router-view />
-    </main>
-    
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200">
-      <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
-        <p class="text-center text-sm text-slate-500">
-          &copy; {{ new Date().getFullYear() }} {{ $t('ordersManagementSystem') }} - {{ $t('allRightsReserved') }}
-        </p>
-      </div>
-    </footer>
+
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <!-- Removed CustomerSearch component -->
+      </aside>
+
+      <!-- Main content -->
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
 
@@ -363,7 +361,8 @@ const showLayout = computed(() => {
 }
 
 .main-content {
-  max-width: 1400px;
+  width: 95%;
+  max-width: none;
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }

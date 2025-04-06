@@ -15,6 +15,11 @@ export default {
   getPendingOrders(force = false) {
     console.log('Fetching pending orders from API', force ? '(forced refresh)' : '')
     
+    // Always force refresh when polling
+    if (this.isPolling) {
+      force = true;
+    }
+    
     // Use cached orders if available and not forcing refresh
     if (this.cachedPendingOrders && !force) {
       console.log('Using cached pending orders:', this.cachedPendingOrders.length)
@@ -31,7 +36,9 @@ export default {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      // Add cache busting parameter when forcing refresh
+      params: force ? { _t: new Date().getTime() } : {}
     })
     .then(response => {
       console.log('Orders API response status:', response.status)
@@ -104,6 +111,11 @@ export default {
   getDeliveredOrders(force = false) {
     console.log('Fetching delivered orders from API', force ? '(forced refresh)' : '')
     
+    // Always force refresh when polling
+    if (this.isPolling) {
+      force = true;
+    }
+    
     // Use cached orders if available and not forcing refresh
     if (this.cachedDeliveredOrders && !force) {
       console.log('Using cached delivered orders:', this.cachedDeliveredOrders.length)
@@ -118,7 +130,9 @@ export default {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      // Add cache busting parameter when forcing refresh
+      params: force ? { _t: new Date().getTime() } : {}
     })
     .then(response => {
       console.log('Delivered orders API response status:', response.status)
@@ -824,5 +838,8 @@ export default {
     // Refresh orders to ensure UI is in sync
     this.refreshOrders();
     return Promise.resolve({ success: true, message: `Order ${orderId} canceled` });
-  }
+  },
+
+  // Add a new property to track polling state
+  isPolling: false
 }

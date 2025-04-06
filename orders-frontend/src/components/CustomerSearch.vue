@@ -2,31 +2,31 @@
   <div class="customer-search card">
     <div v-if="!isAuthenticated" class="auth-section">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-lock"></i> {{ translations.loginToContinue }}</h3>
+        <h3 class="card-title"><i class="fas fa-lock"></i> Iniciar sesión para continuar</h3>
       </div>
       
       <div class="form-group">
-        <label for="email">{{ translations.email }}</label>
+        <label for="email">Correo Electrónico</label>
         <div class="input-with-icon">
           <i class="fas fa-envelope"></i>
           <input
             id="email"
             v-model="authData.email"
             type="email"
-            :placeholder="translations.email"
+            placeholder="Correo electrónico"
           />
         </div>
       </div>
       
       <div class="form-group">
-        <label for="password">{{ translations.password }}</label>
+        <label for="password">Contraseña</label>
         <div class="input-with-icon">
           <i class="fas fa-key"></i>
           <input
             id="password"
             v-model="authData.password"
             type="password"
-            :placeholder="translations.password"
+            placeholder="Contraseña"
           />
         </div>
       </div>
@@ -34,7 +34,7 @@
       <button @click="login" :disabled="isLoading" class="btn-primary btn-full" style="background-color: #e62222; color: white;">
         <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-sign-in-alt"></i>
-        {{ isLoading ? translations.loggingIn : translations.login }}
+        {{ isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
       </button>
       
       <div v-if="authError" class="alert alert-danger">
@@ -44,37 +44,26 @@
 
     <div v-if="isAuthenticated" class="search-section">
       <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-search"></i> {{ translations.searchCustomer }}</h3>
+        <h3 class="card-title"><i class="fas fa-search"></i> Buscar Cliente</h3>
       </div>
       
       <div class="form-group">
-        <label for="phoneNumber">{{ translations.phoneNumber }}</label>
+        <label for="phoneNumber">Teléfono</label>
         <div class="input-with-icon">
           <i class="fas fa-phone"></i>
           <input
             id="phoneNumber"
             v-model="phoneNumber"
             type="text"
-            :placeholder="translations.searchByPhoneNumber"
+            placeholder="Buscar por número de teléfono"
+            @input="handleSearchInput"
           />
-        </div>
-        <div class="search-button-container">
-          <button 
-            @click="searchCustomer" 
-            :disabled="isSearching || !phoneNumber || phoneNumber.length < 3"
-            class="btn-primary search-btn"
-            style="background-color: #e62222; color: white;"
-          >
-            <i v-if="isSearching" class="fas fa-spinner fa-spin"></i>
-            <i v-else class="fas fa-search"></i>
-            {{ translations.search }}
-          </button>
         </div>
       </div>
       
       <div v-if="isSearching" class="loading-state">
         <div class="spinner"></div>
-        <p>{{ translations.searching }}</p>
+        <p>Buscando...</p>
       </div>
       
       <div v-if="searchError" class="alert alert-danger">
@@ -88,7 +77,7 @@
           class="btn-primary new-customer-btn"
         >
           <i class="fas fa-user-plus"></i>
-          {{ translations.newCustomer }}
+          Nuevo Cliente
         </button>
       </div>
 
@@ -104,7 +93,7 @@
           <div class="info-item">
             <i class="fas fa-phone"></i>
             <div>
-              <span class="info-label">{{ translations.phoneNumber }}</span>
+              <span class="info-label">Teléfono</span>
               <span class="info-value">{{ customer.phoneNumber }}</span>
             </div>
           </div>
@@ -112,7 +101,7 @@
           <div class="info-item">
             <i class="fas fa-map-marker-alt"></i>
             <div>
-              <span class="info-label">{{ translations.address }}</span>
+              <span class="info-label">Dirección</span>
               <span class="info-value">{{ customer.address }}</span>
             </div>
           </div>
@@ -127,7 +116,7 @@
         </div>
         
         <button @click="openNewOrderModal" class="btn-secondary btn-full new-order-btn">
-          <i class="fas fa-plus-circle"></i> {{ translations.newOrder }}
+          <i class="fas fa-plus-circle"></i> Nuevo Pedido
         </button>
       </div>
     </div>
@@ -151,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { eventBus } from '../utils/eventBus'
 import NewOrderModal from './NewOrderModal.vue'
@@ -176,6 +165,7 @@ const customer = ref(null)
 const searchError = ref('')
 const showNewCustomerButton = ref(false)
 const showNewCustomerModal = ref(false)
+const searchTimeout = ref(null)
 
 // Order management
 const showNewOrderModal = ref(false)
@@ -248,13 +238,37 @@ const login = async () => {
   }
 }
 
-// Function to search for a customer
-const searchCustomer = async () => {
-  if (!phoneNumber.value || phoneNumber.value.length < 3) {
-    searchError.value = 'El número de teléfono debe tener al menos 3 dígitos'
+// Search handling
+const handleSearchInput = () => {
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+
+  // Clear results if input is empty
+  if (!phoneNumber.value) {
+    customer.value = null
+    showNewCustomerButton.value = false
+    searchError.value = ''
     return
   }
 
+  // Show validation message if input is too short
+  if (phoneNumber.value.length < 3) {
+    customer.value = null
+    showNewCustomerButton.value = false
+    searchError.value = phoneNumber.value.length > 0 ? 'El número de teléfono debe tener al menos 3 dígitos' : ''
+    return
+  }
+
+  // Set a new timeout for the search
+  searchTimeout.value = setTimeout(async () => {
+    await searchCustomer()
+  }, 300) // 300ms delay
+}
+
+// Search customer function
+const searchCustomer = async () => {
   console.log('Searching for customer with phone:', phoneNumber.value)
   isSearching.value = true
   searchError.value = ''
@@ -396,40 +410,7 @@ onMounted(() => {
 }
 
 .search-button-container {
-  margin-top: 0.75rem;
-}
-
-.search-btn {
-  width: 100%;
-  padding: 0.625rem;
-  background-color: #e62222;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: 500;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.search-btn:hover:not(:disabled) {
-  background-color: #d41d1d;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.search-btn:disabled {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.search-btn i {
-  font-size: 0.875rem;
+  display: none;
 }
 
 .alert {

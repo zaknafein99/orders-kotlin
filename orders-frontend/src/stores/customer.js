@@ -19,13 +19,18 @@ export const useCustomerStore = defineStore('customer', {
   },
 
   actions: {
-    async fetchCustomers() {
+    async fetchCustomers(page = 0, size = 10) {
       this.isLoading = true
       this.error = null
       
       try {
-        const response = await CustomerService.getAllCustomers()
-        this.customers = response
+        const response = await CustomerService.getAllCustomers(page, size)
+        this.customers = response.content || []
+        return {
+          content: this.customers,
+          totalPages: response.totalPages || 1,
+          totalElements: response.totalElements || this.customers.length
+        }
       } catch (error) {
         this.error = error.message || 'Failed to fetch customers'
         throw error

@@ -326,9 +326,4 @@ const handleSubmit = async () => {
 .alert i {
   font-size: 1rem;
 }
-
-.submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
 </style> 

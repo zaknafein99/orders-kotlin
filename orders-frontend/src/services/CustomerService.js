@@ -1,9 +1,4 @@
-import axios from 'axios'
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: '' // Remove baseURL to use relative paths
-})
+import api from './api'
 
 // Add request interceptor to add auth token
 api.interceptors.request.use(config => {
@@ -39,8 +34,14 @@ api.interceptors.response.use(
 )
 
 class CustomerService {
-  async getAllCustomers() {
-    const response = await api.get('/customer')
+  async getAllCustomers(page = 0, size = 10) {
+    const response = await api.get('/customer/list', {
+      params: {
+        page,
+        size,
+        sort: 'name,asc'
+      }
+    })
     return response.data
   }
 
@@ -75,15 +76,10 @@ class CustomerService {
   async searchCustomer(phone) {
     try {
       console.log('Searching for customer with phone:', phone)
-      const response = await api.get(`/customer/by-phone/${phone}`, {
-        params: { 
-          size: 5,
-          page: 0
-        }
-      })
+      const response = await api.get(`/customer/by-phone/${phone}`)
       console.log('Search response:', response.data)
-      // Return the first customer if any are found
-      return response.data?.content?.[0] || null
+      // The API returns the customer directly, not in a content array
+      return response.data
     } catch (error) {
       if (error.response?.status === 404) {
         return null

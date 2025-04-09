@@ -2,6 +2,7 @@ package com.kotlin.orders.controller
 
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
+import com.kotlin.orders.entity.OrderStatus
 import com.kotlin.orders.service.OrderService
 
 import jakarta.validation.Valid
@@ -48,6 +49,22 @@ class OrderController(val orderService: OrderService) {
     @ResponseStatus(HttpStatus.OK)
     fun markOrderAsDelivered(@PathVariable orderId: Int): OrderDTO =
         orderService.markAsDelivered(orderId)
+
+    @PutMapping("/{orderId}/status")
+    @ResponseStatus(HttpStatus.OK)
+    fun updateOrderStatus(@PathVariable orderId: Int, @RequestBody statusRequest: Map<String, String>): OrderDTO {
+        logger.info("Updating order status for order $orderId: ${statusRequest["status"]}")
+        val status = statusRequest["status"] ?: throw IllegalArgumentException("Status is required")
+        
+        // If status is DELIVERED, mark the order as delivered
+        if (status == "DELIVERED") {
+            logger.info("Marking order $orderId as delivered")
+            return orderService.markAsDelivered(orderId)
+        }
+        
+        // For future: handle other status changes
+        throw IllegalArgumentException("Unsupported status: $status")
+    }
 
     @DeleteMapping("/{orderId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

@@ -13,6 +13,7 @@ import java.time.LocalDate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.slf4j.LoggerFactory
 
 @Service
 class OrderService(
@@ -22,6 +23,7 @@ class OrderService(
         private val orderRepository: OrderRepository,
         private val orderMapper: OrderMapper
 ) {
+    private val logger = LoggerFactory.getLogger(OrderService::class.java)
 
     fun createOrder(orderDTO: OrderDTO): OrderDTO {
         val customer =
@@ -64,11 +66,35 @@ class OrderService(
     }
 
     fun markOrderAsDelivered(orderId: Int): OrderDTO {
+        logger.info("Marking order as delivered: $orderId")
         val order =
                 orderRepository.findById(orderId).orElseThrow {
                     EntityNotFoundException("Order not found with ID $orderId")
                 }
 
+        // Update inventory quantities for all items in the order
+        order.items.forEach { item ->
+            logger.info("Updating inventory for item ${item.id} (${item.name}): current quantity ${item.quantity}")
+            
+            // Get the current item from the database to ensure we have latest quantity
+            val currentItem = itemRepository.findById(item.id!!).orElseThrow {
+                EntityNotFoundException("Item not found with ID ${item.id}")
+            }
+            
+            // Calculate new quantity
+            val currentQuantity = currentItem.quantity
+            val orderQuantity = item.quantity
+            val newQuantity = Math.max(0, currentQuantity - orderQuantity)
+            
+            logger.info("Item ${item.id} (${item.name}): ${currentQuantity} - ${orderQuantity} = ${newQuantity}")
+            
+            // Update the item with new quantity
+            currentItem.quantity = newQuantity
+            itemRepository.save(currentItem)
+            logger.info("Item ${item.id} quantity updated to ${newQuantity}")
+        }
+
+        // Update order status to DELIVERED
         val updatedOrder = order.copy(status = OrderStatus.DELIVERED)
         return orderMapper.toDto(orderRepository.save(updatedOrder))
     }

@@ -146,6 +146,30 @@ export default defineConfig({
             console.error('Item proxy error:', err)
           })
         }
+      },
+      '/dashboard': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxying dashboard request:', {
+              method: req.method,
+              url: req.url,
+              headers: req.headers
+            })
+          })
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('Received dashboard response:', {
+              status: proxyRes.statusCode,
+              url: req.url,
+              headers: proxyRes.headers
+            })
+          })
+          proxy.on('error', (err, req, res) => {
+            console.error('Dashboard proxy error:', err)
+          })
+        }
       }
     }
   }

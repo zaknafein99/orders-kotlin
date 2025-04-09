@@ -407,6 +407,18 @@ export default {
       
       // Try to update inventory
       if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
+        console.log('Found items in order, updating inventory:')
+        console.log('Items structure:', JSON.stringify(updatedOrder.items, null, 2))
+        
+        // Log the exact structure of each item to help debug
+        updatedOrder.items.forEach((item, index) => {
+          console.log(`Item ${index + 1}:`, {
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity
+          })
+        })
+        
         this.updateInventoryQuantities(updatedOrder.items)
           .then(results => {
             console.log('Inventory updated for delivered order items:', results)
@@ -420,7 +432,21 @@ export default {
         api.get(`/orders/${orderId}`)
           .then(orderResponse => {
             const orderDetails = orderResponse.data
+            console.log('Retrieved order details:', orderDetails)
+            
             if (orderDetails && orderDetails.items && orderDetails.items.length > 0) {
+              console.log('Found items in retrieved order details:')
+              console.log('Items structure:', JSON.stringify(orderDetails.items, null, 2))
+              
+              // Log the exact structure of each item to help debug
+              orderDetails.items.forEach((item, index) => {
+                console.log(`Item ${index + 1}:`, {
+                  id: item.id,
+                  name: item.name,
+                  quantity: item.quantity
+                })
+              })
+              
               this.updateInventoryQuantities(orderDetails.items)
                 .then(results => {
                   console.log('Inventory updated after retrieving order details:', results)
@@ -428,6 +454,8 @@ export default {
                 .catch(err => {
                   console.error('Error updating inventory after retrieving order details:', err)
                 })
+            } else {
+              console.error('No items found in the retrieved order details')
             }
           })
           .catch(err => {
@@ -456,6 +484,9 @@ export default {
         
         // Update inventory if possible
         if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
+          console.log('Found items in order (deliver endpoint), updating inventory:')
+          console.log('Items structure:', JSON.stringify(updatedOrder.items, null, 2))
+          
           this.updateInventoryQuantities(updatedOrder.items)
             .then(results => {
               console.log('Inventory updated for delivered order items:', results)
@@ -463,6 +494,8 @@ export default {
             .catch(err => {
               console.error('Error updating inventory:', err)
             })
+        } else {
+          console.error('No items found in the delivered order response')
         }
         
         // Refresh order tables
@@ -631,98 +664,176 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
     
-    console.log('Updating inventory quantities for items:', items)
+    console.log('Updating inventory quantities for items:', JSON.stringify(items))
     
     // Create an array of promises for each item update
     const updatePromises = items.map(item => {
-      // Extract the item ID and quantity based on the data structure
-      // Handle different possible formats:
-      // 1. Direct format: { id: 123, name: 'Item', quantity: 5 }
-      // 2. Nested item format: { item: { id: 123, name: 'Item' }, quantity: 5 }
-      // 3. Nested id format: { itemId: 123, quantity: 5 }
-      const itemId = item.id || (item.item && item.item.id) || item.itemId
-      const itemName = item.name || (item.item && item.item.name) || 'Unknown Item'
-      const itemQuantity = item.quantity || 0
-      
-      console.log(`Processing item for inventory update: ID=${itemId}, Name=${itemName}, Quantity=${itemQuantity}`)
-      
-      if (!itemId) {
-        console.error('Cannot update inventory for item without ID:', item)
-        return Promise.resolve({
-          error: 'Invalid item format - missing ID',
-          item
-        })
-      }
-      
-      // First, get the current item to retrieve its properties and current quantity
-      // Use sort=name,asc for consistent sorting with other item requests
-      return api.get(`/item/list?page=0&size=100&sort=name,asc`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        let itemData = null;
+      try {
+        // Extract the item ID and quantity based on the data structure
+        // Log the full item object for debugging
+        console.log('Processing item:', JSON.stringify(item))
         
-        if (response.data && response.data.content) {
-          // Find the item in the paginated response
-          itemData = response.data.content.find(i => i.id === itemId);
-        } else if (Array.isArray(response.data)) {
-          // Find the item in the array response
-          itemData = response.data.find(i => i.id === itemId);
+        // Handle different possible formats:
+        // 1. Direct format: { id: 123, name: 'Item', quantity: 5 }
+        // 2. Nested item format: { item: { id: 123, name: 'Item' }, quantity: 5 }
+        // 3. Nested id format: { itemId: 123, quantity: 5 }
+        let itemId = null;
+        if (item.id) {
+          itemId = parseInt(item.id);
+          console.log(`Found direct item ID: ${item.id} (parsed as ${itemId})`);
+        } else if (item.item && item.item.id) {
+          itemId = parseInt(item.item.id);
+          console.log(`Found nested item ID: ${item.item.id} (parsed as ${itemId})`);
+        } else if (item.itemId) {
+          itemId = parseInt(item.itemId);
+          console.log(`Found itemId property: ${item.itemId} (parsed as ${itemId})`);
         }
         
-        if (!itemData) {
-          console.error(`Item with ID ${itemId} not found in inventory list`);
-          throw new Error(`Item with ID ${itemId} not found`);
+        let itemName = item.name || (item.item && item.item.name) || 'Unknown Item';
+        let itemQuantity = 0;
+        
+        if (typeof item.quantity !== 'undefined') {
+          itemQuantity = parseInt(item.quantity);
+          console.log(`Found direct quantity: ${item.quantity} (parsed as ${itemQuantity})`);
+        } else if (item.item && typeof item.item.quantity !== 'undefined') {
+          itemQuantity = parseInt(item.item.quantity);
+          console.log(`Found nested quantity: ${item.item.quantity} (parsed as ${itemQuantity})`);
         }
         
-        console.log(`Found item ${itemId} in inventory:`, itemData);
+        console.log(`Processing item for inventory update: ID=${itemId}, Name=${itemName}, Quantity=${itemQuantity}`)
         
-        // Calculate the new quantity by subtracting the order quantity
-        const currentQuantity = itemData.quantity || 0;
-        const newQuantity = Math.max(0, currentQuantity - itemQuantity);
+        if (!itemId) {
+          console.error('Cannot update inventory for item without ID:', item)
+          return Promise.resolve({
+            error: 'Invalid item format - missing ID',
+            item
+          })
+        }
         
-        console.log(`Updating inventory for item ${itemId} (${itemName}): ${currentQuantity} - ${itemQuantity} = ${newQuantity}`);
+        if (isNaN(itemQuantity) || itemQuantity <= 0) {
+          console.warn(`Item ${itemId} has invalid quantity (${itemQuantity}), skipping inventory update`);
+          return Promise.resolve({
+            itemId,
+            name: itemName,
+            skipped: true,
+            reason: `Invalid quantity: ${itemQuantity}`
+          });
+        }
         
-        // Prepare the updated item with all required fields
-        const updatedItem = {
-          id: itemId,
-          name: itemData.name,
-          description: itemData.description || "",
-          price: Number(itemData.price),
-          quantity: newQuantity,
-          category: itemData.category || "Uncategorized"
-        };
-        
-        // Update the item with the PUT endpoint
-        return api.put(`/item/${itemId}`, updatedItem, {
+        // First, get the current item to retrieve its properties and current quantity
+        // Use sort=name,asc for consistent sorting with other item requests
+        return api.get(`/item/${itemId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`
           }
         })
-        .then(updateResponse => {
-          console.log(`Inventory updated for item ${itemId} using PUT: ${updateResponse.data}`);
-          return updateResponse.data;
+        .then(response => {
+          const itemData = response.data;
+          console.log(`Found item ${itemId} directly:`, itemData);
+          
+          if (!itemData) {
+            console.error(`Item with ID ${itemId} not found directly`);
+            // Fall back to list endpoint
+            return api.get(`/item/list?page=0&size=100&sort=name,asc`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+            .then(listResponse => {
+              let foundItem = null;
+              
+              if (listResponse.data && listResponse.data.content) {
+                // Find the item in the paginated response
+                foundItem = listResponse.data.content.find(i => parseInt(i.id) === itemId);
+                console.log(`Searching for item with ID ${itemId} in ${listResponse.data.content.length} items. Found:`, foundItem);
+              } else if (Array.isArray(listResponse.data)) {
+                // Find the item in the array response
+                foundItem = listResponse.data.find(i => parseInt(i.id) === itemId);
+                console.log(`Searching for item with ID ${itemId} in ${listResponse.data.length} items. Found:`, foundItem);
+              }
+              
+              if (!foundItem) {
+                throw new Error(`Item with ID ${itemId} not found in inventory list`);
+              }
+              
+              return foundItem;
+            });
+          }
+          
+          return itemData;
+        })
+        .then(itemData => {
+          // Calculate the new quantity by subtracting the order quantity
+          const currentQuantity = parseInt(itemData.quantity) || 0;
+          const newQuantity = Math.max(0, currentQuantity - itemQuantity);
+          
+          console.log(`Updating inventory for item ${itemId} (${itemName}): ${currentQuantity} - ${itemQuantity} = ${newQuantity}`);
+          
+          // Prepare the updated item with all required fields
+          const updatedItem = {
+            id: itemId,
+            name: itemData.name,
+            description: itemData.description || "",
+            price: Number(itemData.price),
+            quantity: newQuantity,
+            category: itemData.category || "Uncategorized"
+          };
+          
+          console.log('Sending PUT request with updated item:', updatedItem);
+          
+          // Update the item with the PUT endpoint
+          return api.put(`/item/${itemId}`, updatedItem, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          .then(updateResponse => {
+            console.log(`Inventory updated for item ${itemId} using PUT:`, updateResponse.data);
+            return {
+              success: true,
+              itemId,
+              name: itemData.name,
+              previousQuantity: currentQuantity,
+              newQuantity,
+              data: updateResponse.data
+            };
+          })
+          .catch(error => {
+            console.error(`Error updating inventory for item ${itemId}:`, error);
+            console.error('Request details:', {
+              url: `/item/${itemId}`,
+              method: 'PUT',
+              error: error.message
+            });
+            
+            // Don't reject the whole promise chain, just return the error
+            return {
+              success: false,
+              itemId: itemId,
+              name: itemName,
+              error: error.message || 'Unknown error'
+            };
+          });
         })
         .catch(error => {
-          console.error(`Error updating inventory for item ${itemId}:`, error);
-          console.error('Request details:', {
-            url: `/item/${itemId}`,
-            method: 'PUT',
-            error: error.message
-          });
-          
-          // Don't reject the whole promise chain, just return the error
+          console.error(`Error processing item ${itemId} for inventory update:`, error);
           return {
-            itemId: itemId,
+            success: false,
+            itemId,
             name: itemName,
-            error: error.message || 'Unknown error'
+            error: error.message
           };
         });
-      })
-    })
+      } catch (e) {
+        console.error('Unexpected error processing item:', e);
+        return Promise.resolve({
+          success: false,
+          error: e.message,
+          item
+        });
+      }
+    });
     
     return Promise.all(updatePromises);
   },

@@ -112,15 +112,7 @@ const form = ref({
 
 const isEditing = computed(() => props.editItem !== null)
 
-// Watch for editItem changes to populate the form
-watch(() => props.editItem, (newItem) => {
-  if (newItem) {
-    form.value = { ...newItem }
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
-
+// Define resetForm before it's used in the watch function
 const resetForm = () => {
   form.value = {
     name: '',
@@ -130,6 +122,15 @@ const resetForm = () => {
     quantity: 0
   }
 }
+
+// Watch for editItem changes to populate the form
+watch(() => props.editItem, (newItem) => {
+  if (newItem) {
+    form.value = { ...newItem }
+  } else {
+    resetForm()
+  }
+}, { immediate: true })
 
 const closeModal = () => {
   emit('close')

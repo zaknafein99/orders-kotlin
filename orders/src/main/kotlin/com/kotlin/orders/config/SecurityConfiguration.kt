@@ -41,6 +41,7 @@ class SecurityConfiguration(
                             .requestMatchers(HttpMethod.GET, "/customer/by-phone/**").permitAll()
                             .requestMatchers(HttpMethod.POST, "/user").permitAll()
                             .requestMatchers("/user/**").hasRole("ADMIN")
+                            .requestMatchers("/dashboard/**").authenticated()
                             .anyRequest().authenticated()
                 }
                 .sessionManagement {

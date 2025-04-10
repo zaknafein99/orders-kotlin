@@ -114,7 +114,7 @@
 
     <!-- Sales Chart -->
     <div class="card bg-white p-4 rounded-lg shadow mb-6">
-      <h3 class="text-lg font-semibold text-slate-700 mb-4">Sales Chart</h3>
+      <h3 class="text-lg font-semibold text-slate-700 mb-4">Monthly Sales Chart</h3>
       <div style="height: 300px; position: relative;">
         <canvas id="salesChart"></canvas>
       </div>
@@ -175,17 +175,17 @@ const fetchStatistics = async () => {
 
     // Check if the month data exists and contains daily sales
     if (statistics.value.month?.dailySales && Array.isArray(statistics.value.month.dailySales)) {
-      console.log('Daily sales data:', statistics.value.month.dailySales)
+      console.log('Monthly sales data:', statistics.value.month.dailySales)
       
       if (statistics.value.month.dailySales.length > 0) {
         updateSalesChart(statistics.value.month.dailySales)
       } else {
-        console.warn('Daily sales array is empty')
+        console.warn('Monthly sales array is empty')
         // Create chart with empty data
         updateSalesChart([])
       }
     } else {
-      console.warn('No daily sales data found in API response:', statistics.value)
+      console.warn('No monthly sales data found in API response:', statistics.value)
       // Create chart with empty data
       updateSalesChart([])
     }
@@ -267,6 +267,13 @@ const updateSalesChart = (data) => {
             },
             tooltip: {
               enabled: false
+            },
+            title: {
+              display: true,
+              text: 'Monthly Sales',
+              font: {
+                size: 16
+              }
             }
           },
           scales: {
@@ -311,7 +318,7 @@ const updateSalesChart = (data) => {
               ctx.textBaseline = 'middle';
               ctx.font = '16px sans-serif';
               ctx.fillStyle = '#666';
-              ctx.fillText('No sales data available for this period', width / 2, height / 2);
+              ctx.fillText('No monthly sales data available', width / 2, height / 2);
               ctx.restore();
             }
           }
@@ -324,7 +331,7 @@ const updateSalesChart = (data) => {
     const chartData = data.map(item => ({
       x: new Date(item.date),
       y: item.totalSales
-    }))
+    })).sort((a, b) => a.x - b.x) // Sort by date
     
     console.log('Chart data:', chartData)
 
@@ -332,7 +339,7 @@ const updateSalesChart = (data) => {
       type: 'bar',
       data: {
         datasets: [{
-          label: 'Sales',
+          label: 'Monthly Sales',
           data: chartData,
           backgroundColor: 'rgba(76, 175, 80, 0.6)',
           borderColor: '#4CAF50',
@@ -356,6 +363,13 @@ const updateSalesChart = (data) => {
               label: function(context) {
                 return `$${context.parsed.y.toFixed(2)}`;
               }
+            }
+          },
+          title: {
+            display: true,
+            text: 'Monthly Sales Overview',
+            font: {
+              size: 16
             }
           }
         },

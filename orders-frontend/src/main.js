@@ -56,13 +56,13 @@ axios.interceptors.request.use(config => {
 axios.interceptors.response.use(response => {
   console.log(`Response received: ${response.status} ${response.config.url}`)
   return response
-}, error => {
+}, async error => {
   // Handle specific error codes for authentication
   if (error.response) {
     console.error(`Request failed with status: ${error.response.status}`, error.config?.url)
     
-    // Only handle 401 Unauthorized errors
-    if (error.response.status === 401) {
+    // Handle authentication errors (401 Unauthorized or 403 Forbidden)
+    if (error.response.status === 401 || error.response.status === 403) {
       console.error('Authentication error:', error.response.status, error.config?.url)
       console.error('Error details:', error.response.data)
       
@@ -74,7 +74,31 @@ axios.interceptors.response.use(response => {
         data: error.config?.data
       })
       
-      // Clear token from localStorage
+      // Import AuthService dynamically to avoid circular dependency
+      const AuthService = (await import('./services/AuthService')).default
+      
+      // Only try to refresh if not already at login page and not already trying to refresh
+      if (router.currentRoute.value.name !== 'login' && !error.config?.url.includes('/auth')) {
+        console.log('Attempting to refresh token before redirect')
+        
+        try {
+          const newToken = await AuthService.refreshToken()
+          if (newToken) {
+            console.log('Token refreshed successfully, retrying original request')
+            
+            // If we got a new token, retry the original request
+            const originalRequest = error.config
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+            return axios(originalRequest)
+          } else {
+            console.error('Token refresh failed, redirecting to login')
+          }
+        } catch (refreshError) {
+          console.error('Error during token refresh:', refreshError)
+        }
+      }
+      
+      // If refresh failed or not applicable, clear token and redirect
       localStorage.removeItem('token')
       
       // Redirect to login page if needed

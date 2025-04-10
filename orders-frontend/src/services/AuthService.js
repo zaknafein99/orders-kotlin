@@ -13,7 +13,7 @@ export default {
     return api.post('/auth', { email, password })
       .then(response => {
         console.log('Login response:', response)
-        const { accessToken } = response.data
+        const { accessToken, refreshToken } = response.data
         
         console.log('Full response data:', response.data)
         
@@ -25,9 +25,15 @@ export default {
         
         console.log(`Received token: ${accessToken.substring(0, 15)}...`)
         
-        // Store token in localStorage
+        // Store tokens in localStorage
         localStorage.setItem('token', accessToken)
-        console.log('Token stored in localStorage')
+        localStorage.setItem('refreshToken', refreshToken)
+        
+        // Store credentials for future refresh if needed
+        localStorage.setItem('userEmail', email)
+        localStorage.setItem('userPassword', password)
+        
+        console.log('Tokens and credentials stored in localStorage')
         
         // Set the token in axios default headers
         api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
@@ -55,6 +61,7 @@ export default {
   logout() {
     // Remove token and credentials from localStorage
     localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userPassword')
     
@@ -143,21 +150,63 @@ export default {
   refreshToken() {
     console.log('Attempting to refresh token')
     
-    // Get the current user credentials from localStorage if available
+    const refreshToken = localStorage.getItem('refreshToken')
+    
+    if (refreshToken) {
+      console.log('Found refresh token, attempting to refresh access token')
+      
+      return api.post('/auth/refresh', { token: refreshToken })
+        .then(response => {
+          console.log('Token refresh response:', response)
+          
+          // Check if the response contains the new token
+          if (response.data && response.data.token) {
+            const newToken = response.data.token
+            
+            // Update the stored token
+            localStorage.setItem('token', newToken)
+            
+            // Update the authorization header
+            api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+            
+            console.log('Access token refreshed successfully')
+            return newToken
+          } else {
+            console.error('No token in refresh response')
+            return null
+          }
+        })
+        .catch(error => {
+          console.error('Failed to refresh token with refresh token:', error)
+          
+          // Fall back to credentials-based refresh if available
+          return this.refreshWithCredentials()
+        })
+    } else {
+      console.log('No refresh token found, trying credentials refresh')
+      return this.refreshWithCredentials()
+    }
+  },
+  
+  /**
+   * Fall back to credentials-based refresh if refresh token fails
+   * @returns {Promise<string|null>} Promise that resolves to the new token or null if refresh failed
+   */
+  refreshWithCredentials() {
     const userEmail = localStorage.getItem('userEmail')
     const userPassword = localStorage.getItem('userPassword')
     
     if (userEmail && userPassword) {
-      console.log(`Found stored credentials for ${userEmail}, attempting to refresh token`)
+      console.log(`Found stored credentials for ${userEmail}, attempting to re-login`)
       
       // Re-authenticate with stored credentials
       return this.login(userEmail, userPassword)
         .then(newToken => {
-          console.log('Token refreshed successfully')
+          console.log('Token refreshed successfully through re-login')
           return newToken
         })
         .catch(error => {
-          console.error('Failed to refresh token:', error)
+          console.error('Failed to refresh token through re-login:', error)
           return null
         })
     } else {

@@ -92,32 +92,51 @@
 
         <!-- Weekly Sales -->
         <div class="card bg-white p-4 rounded-lg shadow">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-slate-700">{{ $t('weeklySales') }}</h3>
-            <input 
-              type="date" 
-              v-model="selectedWeekStart" 
-              class="form-input"
-              @change="fetchWeeklySales"
-            >
+          <div class="card-header">
+            <h3 class="card-title">{{ $t('weeklySales') }}</h3>
+            <div class="card-date">
+              <input 
+                type="date" 
+                v-model="selectedWeekStart" 
+                class="form-control" 
+              />
+            </div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>{{ $t('date') }}</th>
-                  <th>{{ $t('orders') }}</th>
-                  <th>{{ $t('totalSales') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="day in weeklySales.dailySales" :key="day.date">
-                  <td>{{ formatDate(day.date) }}</td>
-                  <td>{{ day.orderCount }}</td>
-                  <td>${{ formatNumber(day.totalSales) }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="card-body">
+            <div v-if="weeklySales.startDate && weeklySales.endDate" class="mb-3 text-center text-sm text-gray-600">
+              {{ formatDate(new Date(weeklySales.startDate), t('locale')) }} - {{ formatDate(new Date(weeklySales.endDate), t('locale')) }}
+            </div>
+            <div class="overflow-x-auto">
+              <table class="table" v-if="weeklySales.dailySales && weeklySales.dailySales.length > 0">
+                <thead>
+                  <tr>
+                    <th>{{ $t('date') }}</th>
+                    <th>{{ $t('orders') }}</th>
+                    <th>{{ $t('totalSales') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="day in weeklySales.dailySales" :key="day.date" 
+                      :class="{'bg-primary-50': day.isToday}">
+                    <td>
+                      <div class="flex items-center">
+                        <span v-if="day.isToday" class="w-2 h-2 bg-primary-500 rounded-full mr-2"></span>
+                        {{ day.formattedDate }}
+                        <span v-if="day.isToday" class="ml-2 text-xs text-primary-600 font-medium">
+                          ({{ $t('today') }})
+                        </span>
+                      </div>
+                    </td>
+                    <td>{{ day.orderCount }}</td>
+                    <td>${{ formatNumber(day.totalSales) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="text-center py-8 text-slate-500">
+                <i class="fas fa-calendar-week text-4xl mb-2"></i>
+                <p>{{ $t('noData') || 'No weekly sales data available' }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -134,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import axios from 'axios'
 import {
   Chart as ChartJS,
@@ -152,7 +171,7 @@ import {
 } from 'chart.js'
 import 'chartjs-adapter-date-fns'
 import { format } from 'date-fns'
-import { enUS } from 'date-fns/locale'
+import { enUS, es } from 'date-fns/locale'
 import { formatCurrency, formatDate, formatNumber } from '../utils/formatters'
 import { useI18n } from 'vue-i18n'
 
@@ -174,23 +193,56 @@ ChartJS.register(
   TimeScale
 )
 
+// Set chart default locale based on i18n setting
+const chartLocale = t('locale') === 'es-ES' ? es : enUS;
+
+// Initialize refs for component state
 let salesChart = null;
 let chartInitAttempts = 0;
 const MAX_CHART_INIT_ATTEMPTS = 5;
 
 // Date selections
 const selectedDate = ref(format(new Date(), 'yyyy-MM-dd'))
-const selectedWeekStart = ref(format(new Date(), 'yyyy-MM-dd'))
+const selectedWeekStart = ref(getStartOfWeek())
+
+// Function to get the start of the current week (Monday)
+function getStartOfWeek() {
+  const today = new Date()
+  const day = today.getDay() // 0 is Sunday, 1 is Monday, etc.
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Sunday (go back to previous Monday)
+  const monday = new Date(today.setDate(diff))
+  return format(monday, 'yyyy-MM-dd')
+}
 
 // Canvas reference
 const salesChartCanvas = ref(null)
 
-// Data
-const statistics = ref({})
+// Data - Initialize with default values to prevent undefined errors
+const statistics = ref({
+  today: { totalSales: 0, orderCount: 0 },
+  month: { totalSales: 0, orderCount: 0 },
+  pendingOrders: 0,
+  averageOrderValue: 0
+})
 const dailySales = ref({ truckSales: {} })
 const weeklySales = ref({ dailySales: [] })
 const loading = ref(true)
 const chartData = ref([]) // Store chart data
+
+// Watch for date changes to refresh data
+watch(selectedWeekStart, (newDate, oldDate) => {
+  if (newDate !== oldDate) {
+    console.log(`Weekly start date changed from ${oldDate} to ${newDate}, refreshing data`);
+    fetchWeeklySales();
+  }
+});
+
+watch(selectedDate, (newDate, oldDate) => {
+  if (newDate !== oldDate) {
+    console.log(`Daily date changed from ${oldDate} to ${newDate}, refreshing data`);
+    fetchDailySales();
+  }
+});
 
 onMounted(async () => {
   try {
@@ -240,7 +292,19 @@ const fetchAllData = async () => {
 const fetchStatistics = async () => {
   try {
     const response = await axios.get('/dashboard/statistics')
-    statistics.value = response.data
+    // Merge response data with defaults to ensure we always have valid structure
+    statistics.value = {
+      ...statistics.value,
+      ...response.data,
+      today: {
+        ...statistics.value.today,
+        ...(response.data?.today || {})
+      },
+      month: {
+        ...statistics.value.month,
+        ...(response.data?.month || {})
+      }
+    }
   } catch (error) {
     console.error(t('errorFetchingStatistics'), error)
   }
@@ -257,10 +321,56 @@ const fetchDailySales = async () => {
 
 const fetchWeeklySales = async () => {
   try {
+    console.log(`Fetching weekly sales for start date: ${selectedWeekStart.value}`);
     const response = await axios.get(`/dashboard/truck-sales/weekly?startDate=${selectedWeekStart.value}`)
-    weeklySales.value = response.data
+    console.log('Weekly sales response:', response.data);
+    
+    // Make sure we have dailySales data
+    if (response.data && Array.isArray(response.data.dailySales)) {
+      const startDate = new Date(selectedWeekStart.value);
+      
+      // Create a complete week array with all 7 days, even if no orders on some days
+      const completeWeekData = [];
+      for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const formattedDate = format(currentDate, 'yyyy-MM-dd');
+        
+        // Find if we have data for this date
+        const existingData = response.data.dailySales.find(day => 
+          day.date === formattedDate || 
+          (day.date && new Date(day.date).toDateString() === currentDate.toDateString())
+        );
+        
+        // Get current locale from i18n
+        const currentLocale = t('locale') || navigator.language || 'es-ES';
+        
+        completeWeekData.push({
+          date: formattedDate,
+          formattedDate: formatDate(currentDate, currentLocale),
+          // Use data if exists, otherwise use zeros
+          orderCount: existingData ? existingData.orderCount : 0,
+          totalSales: existingData ? existingData.totalSales : 0,
+          // Highlight today's date
+          isToday: new Date().toDateString() === currentDate.toDateString()
+        });
+      }
+      
+      // Update the weeklySales object with processed data
+      weeklySales.value = {
+        ...response.data,
+        startDate: selectedWeekStart.value,
+        endDate: format(new Date(startDate.getTime() + 6 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        dailySales: completeWeekData
+      };
+      console.log('Processed weekly sales data:', weeklySales.value);
+    } else {
+      console.warn('No dailySales array found in weekly sales response');
+      weeklySales.value = { dailySales: [] };
+    }
   } catch (error) {
     console.error(t('errorFetchingWeeklySales'), error)
+    weeklySales.value = { dailySales: [] };
   }
 }
 
@@ -424,8 +534,16 @@ const updateSalesChart = async (data) => {
           scales: {
             x: {
               type: 'time',
+              adapters: {
+                date: {
+                  locale: chartLocale
+                }
+              },
               time: {
-                unit: 'day'
+                unit: 'day',
+                displayFormats: {
+                  day: 'dd MMM'
+                }
               },
               title: {
                 display: true,
@@ -521,7 +639,13 @@ const updateSalesChart = async (data) => {
           tooltip: {
             callbacks: {
               title: function(context) {
-                return format(context[0].raw.x, 'PPP', { locale: enUS });
+                const dateObj = context[0].raw.x;
+                // Use current locale for date formatting
+                return new Intl.DateTimeFormat(t('locale'), {
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric'
+                }).format(dateObj);
               },
               label: function(context) {
                 return `${t('sales')}: $${formatNumber(context.raw.y)}`;
@@ -532,8 +656,16 @@ const updateSalesChart = async (data) => {
         scales: {
           x: {
             type: 'time',
+            adapters: {
+              date: {
+                locale: chartLocale
+              }
+            },
             time: {
-              unit: 'day'
+              unit: 'day',
+              displayFormats: {
+                day: 'dd MMM'
+              }
             },
             title: {
               display: true,

@@ -17,6 +17,7 @@ export const messages = {
     inventory: 'Inventory',
     error: 'Error',
     success: 'Success',
+    locale: 'en-US',
     // Orders
     createOrder: 'Create Order',
     orderNumber: 'Order Number',
@@ -82,6 +83,8 @@ export const messages = {
     monthlySalesOverview: 'Monthly Sales Overview',
     noMonthlyDataAvailable: 'No monthly data available',
     noMonthlySalesData: 'No monthly sales data available',
+    noData: 'No data available',
+    today: 'Today',
     date: 'Date',
     sales: 'Sales',
     mostUsedControls: 'Most Used Controls',
@@ -173,6 +176,7 @@ export const messages = {
     orders: 'Pedidos',
     error: 'Error',
     success: 'Éxito',
+    locale: 'es-ES',
     // Orders
     createOrder: 'Crear Pedido',
     orderNumber: 'Número de Pedido',
@@ -241,6 +245,8 @@ export const messages = {
     monthlySalesOverview: 'Resumen de Ventas Mensuales',
     noMonthlyDataAvailable: 'No hay datos de ventas mensuales disponibles',
     noMonthlySalesData: 'No hay datos de ventas mensuales disponibles',
+    noData: 'No hay datos disponibles',
+    today: 'Hoy',
     date: 'Fecha',
     sales: 'Ventas',
     mostUsedControls: 'Controles Más Usados',

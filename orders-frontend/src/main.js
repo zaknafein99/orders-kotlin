@@ -11,8 +11,8 @@ import { messages } from './utils/translations'
 // Create i18n instance
 const i18n = createI18n({
   legacy: false,
-  locale: 'en',
-  fallbackLocale: 'es',
+  locale: 'es',
+  fallbackLocale: 'en',
   messages
 })
 

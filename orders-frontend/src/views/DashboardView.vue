@@ -142,6 +142,7 @@ import {
 import 'chartjs-adapter-date-fns'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale'
+import { formatCurrency, formatDate, formatNumber } from '../utils/formatters'
 
 // Register Chart.js components
 ChartJS.register(
@@ -393,17 +394,6 @@ const updateSalesChart = (data) => {
   } catch (error) {
     console.error('Error creating chart:', error)
   }
-}
-
-const formatNumber = (number) => {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(number)
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString()
 }
 
 onMounted(() => {

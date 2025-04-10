@@ -31,6 +31,14 @@ class ItemController(val itemService: ItemService, val itemRepository: ItemRepos
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteItem(@PathVariable("item_id") itemId: Int) = itemService.deleteItem(itemId)
 
+    @GetMapping("/{item_id}")
+    @ResponseStatus(HttpStatus.OK)
+    fun getItemById(@PathVariable("item_id") itemId: Int): ItemDTO {
+        val item = itemService.findById(itemId) 
+            ?: throw RuntimeException("Item not found with id $itemId")
+        return ItemDTO(item.id, item.name, item.description, item.price, item.quantity, item.category)
+    }
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getItems(): List<ItemDTO> = itemService.getItems()

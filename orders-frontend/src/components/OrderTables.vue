@@ -161,6 +161,7 @@ import { eventBus } from '../utils/eventBus'
 import OrderService from '../services/OrderService'
 import TruckService from '../services/TruckService'
 import { translations } from '../utils/translations'
+import { formatDate } from '../utils/formatters'
 
 // Track truck assignments for orders that don't have one yet
 const orderTrucks = reactive({})
@@ -359,15 +360,6 @@ const fetchOrders = async () => {
   } catch (error) {
     console.error('Error fetching orders:', error)
   }
-}
-
-const formatDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const day = d.getDate().toString().padStart(2, '0')
-  const month = (d.getMonth() + 1).toString().padStart(2, '0')
-  const year = d.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 const getSelectedTruckName = (truckId) => {

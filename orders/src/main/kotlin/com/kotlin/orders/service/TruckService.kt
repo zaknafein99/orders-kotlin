@@ -70,4 +70,8 @@ class TruckService(val truckRepository: TruckRepository){
 
     }
 
+    fun findById(id: Int): Truck? {
+        return truckRepository.findById(id).orElse(null)
+    }
+
 }

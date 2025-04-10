@@ -390,113 +390,45 @@ export default {
     
     console.log('Using token for deliver request:', token ? `${token.substring(0, 15)}...` : 'No token')
     
-    // Try using the status update endpoint directly without retrieving the order first
-    console.log('Attempting to mark order as delivered using status endpoint...')
+    // First try the main delivery endpoint
+    console.log('Attempting to mark order as delivered using dedicated endpoint...')
     
-    return api.put(`/orders/${orderId}/status`, {
-      status: 'DELIVERED'
-    }, {
+    return api.post(`/orders/${orderId}/deliver`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
     .then(response => {
-      console.log('Order marked as delivered successfully using status endpoint:', response.data)
+      console.log('Order marked as delivered successfully:', response.data)
       const updatedOrder = response.data
       
-      // Try to update inventory
-      if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
-        console.log('Found items in order, updating inventory:')
-        console.log('Items structure:', JSON.stringify(updatedOrder.items, null, 2))
-        
-        // Log the exact structure of each item to help debug
-        updatedOrder.items.forEach((item, index) => {
-          console.log(`Item ${index + 1}:`, {
-            id: item.id,
-            name: item.name,
-            quantity: item.quantity
-          })
-        })
-        
-        this.updateInventoryQuantities(updatedOrder.items)
-          .then(results => {
-            console.log('Inventory updated for delivered order items:', results)
-          })
-          .catch(err => {
-            console.error('Error updating inventory:', err)
-          })
-      } else {
-        console.log('No items found in the updated order, trying to retrieve order details...')
-        // Try to get order details to update inventory
-        api.get(`/orders/${orderId}`)
-          .then(orderResponse => {
-            const orderDetails = orderResponse.data
-            console.log('Retrieved order details:', orderDetails)
-            
-            if (orderDetails && orderDetails.items && orderDetails.items.length > 0) {
-              console.log('Found items in retrieved order details:')
-              console.log('Items structure:', JSON.stringify(orderDetails.items, null, 2))
-              
-              // Log the exact structure of each item to help debug
-              orderDetails.items.forEach((item, index) => {
-                console.log(`Item ${index + 1}:`, {
-                  id: item.id,
-                  name: item.name,
-                  quantity: item.quantity
-                })
-              })
-              
-              this.updateInventoryQuantities(orderDetails.items)
-                .then(results => {
-                  console.log('Inventory updated after retrieving order details:', results)
-                })
-                .catch(err => {
-                  console.error('Error updating inventory after retrieving order details:', err)
-                })
-            } else {
-              console.error('No items found in the retrieved order details')
-            }
-          })
-          .catch(err => {
-            console.error('Could not retrieve order details for inventory update:', err)
-          })
-      }
+      // The backend should have updated the inventory automatically
+      console.log('Backend should have updated inventory. Order was marked as delivered successfully.')
       
       // Refresh order tables
       this.refreshOrders(updatedOrder)
       return updatedOrder
     })
     .catch(firstError => {
-      console.warn('Status update approach failed:', firstError.message)
-      console.warn('Trying direct POST to deliver endpoint...')
+      console.warn('Direct deliver endpoint failed:', firstError.message)
+      console.warn('Trying status update endpoint...')
       
-      // Try the deliver endpoint
-      return api.post(`/orders/${orderId}/deliver`, {}, {
+      // Try the status update endpoint as fallback
+      return api.put(`/orders/${orderId}/status`, {
+        status: 'DELIVERED'
+      }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       .then(response => {
-        console.log('Order marked as delivered successfully using deliver endpoint:', response.data)
+        console.log('Order marked as delivered successfully using status endpoint:', response.data)
         const updatedOrder = response.data
         
-        // Update inventory if possible
-        if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
-          console.log('Found items in order (deliver endpoint), updating inventory:')
-          console.log('Items structure:', JSON.stringify(updatedOrder.items, null, 2))
-          
-          this.updateInventoryQuantities(updatedOrder.items)
-            .then(results => {
-              console.log('Inventory updated for delivered order items:', results)
-            })
-            .catch(err => {
-              console.error('Error updating inventory:', err)
-            })
-        } else {
-          console.error('No items found in the delivered order response')
-        }
+        // The backend should have updated the inventory automatically
+        console.log('Backend should have updated inventory. Order status was changed to DELIVERED successfully.')
         
         // Refresh order tables
         this.refreshOrders(updatedOrder)
@@ -810,7 +742,7 @@ export default {
             // Don't reject the whole promise chain, just return the error
             return {
               success: false,
-              itemId: itemId,
+              itemId,
               name: itemName,
               error: error.message || 'Unknown error'
             };

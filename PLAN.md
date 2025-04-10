@@ -45,7 +45,7 @@ graph LR
     C -- JPA --> D[(Database)];
     C -- JWT Auth --> C;
 
-    subgraph Frontend (orders-frontend)
+    subgraph Frontend
         B
         direction LR
         B1[Views]
@@ -60,7 +60,7 @@ graph LR
         B4 --> B5
     end
 
-    subgraph Backend (orders)
+    subgraph Backend
         C
         direction LR
         C1[Controllers]

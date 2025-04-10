@@ -119,10 +119,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import NewItemModal from './NewItemModal.vue'
 import ItemService from '../services/ItemService'
 import { formatPrice } from '../utils/orderUtils'
+import { eventBus } from '../utils/eventBus'
 
 // Items state
 const items = ref([])
@@ -256,10 +257,26 @@ const deleteItem = async () => {
   }
 }
 
-// Load items on component mount
+// Load items on component mount and set up event listeners
 onMounted(() => {
+  console.log('ItemsManagement component mounted')
   loadItems()
+  
+  // Listen for refresh-items events to update item data
+  eventBus.on('refresh-items', handleRefreshItems)
 })
+
+// Clean up event listeners when component is unmounted
+onBeforeUnmount(() => {
+  console.log('ItemsManagement component will unmount, removing event listeners')
+  eventBus.off('refresh-items', handleRefreshItems)
+})
+
+// Handle refresh-items event
+const handleRefreshItems = () => {
+  console.log('Received refresh-items event in ItemsManagement, updating item data')
+  loadItems()
+}
 </script>
 
 <style>

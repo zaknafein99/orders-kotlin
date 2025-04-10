@@ -5,6 +5,7 @@ import com.kotlin.orders.exceptionhandler.CustomerAlreadyExistsException
 import com.kotlin.orders.exceptionhandler.CustomerNotFoundException
 import com.kotlin.orders.mapper.CustomerMapper
 import com.kotlin.orders.repository.CustomerRepository
+import com.kotlin.orders.entity.Customer
 import mu.KLogging
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -113,6 +114,10 @@ class CustomerService(val customerRepository: CustomerRepository, val customerMa
 
     fun getCustomersPaged(pageable: Pageable): Page<CustomerDTO> {
         return customerRepository.findAll(pageable).map { customerMapper.customerToCustomerDTO(it) }
+    }
+
+    fun findById(id: Int): Customer? {
+        return customerRepository.findById(id).orElse(null)
     }
 }
 

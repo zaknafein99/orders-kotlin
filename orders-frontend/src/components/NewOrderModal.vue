@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { eventBus } from '../utils/eventBus'
 import ItemSelector from './ItemSelector.vue'
 import OrderSummary from './OrderSummary.vue'
@@ -89,6 +89,8 @@ import NewCustomerModal from './NewCustomerModal.vue'
 import { useCustomerStore } from '../stores/customer'
 import { useRouter } from 'vue-router'
 import { createOrderObject, validateOrder } from '../utils/orderUtils'
+import { calculateOrderTotal } from '../utils/orderUtils'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps({
@@ -487,22 +489,38 @@ const searchCustomer = async () => {
 
 // Additional methods
 const handleInventoryAlert = (alert) => {
-  console.log('Received inventory alert:', alert)
-  
-  // Check if we already have an alert with the same message
-  const existingAlertIndex = inventoryAlerts.value.findIndex(a => a.message === alert.message)
-  
+  // Check if we already have an alert for this item
+  const existingAlertIndex = inventoryAlerts.value.findIndex(a => a.id === alert.id)
   if (existingAlertIndex >= 0) {
-    // Update existing alert if needed
-    inventoryAlerts.value[existingAlertIndex] = {
-      ...inventoryAlerts.value[existingAlertIndex],
-      ...alert
-    }
+    // Update existing alert
+    inventoryAlerts.value[existingAlertIndex] = alert
   } else {
     // Add new alert
     inventoryAlerts.value.push(alert)
   }
 }
+
+// Handle refresh-items event to update inventory quantities after delivery
+const handleItemsRefresh = () => {
+  console.log('Received refresh-items event, updating item data')
+  fetchItems()
+}
+
+// Initialize when component is mounted
+onMounted(() => {
+  console.log('NewOrderModal component mounted')
+  fetchItems()
+  fetchTrucks()
+  
+  // Listen for refresh-items events to update item quantities
+  eventBus.on('refresh-items', handleItemsRefresh)
+})
+
+// Clean up event listeners when component is unmounted
+onBeforeUnmount(() => {
+  console.log('NewOrderModal component will unmount, removing event listeners')
+  eventBus.off('refresh-items', handleItemsRefresh)
+})
 
 // Watch for modal visibility changes
 watch(() => props.show, (newVal) => {

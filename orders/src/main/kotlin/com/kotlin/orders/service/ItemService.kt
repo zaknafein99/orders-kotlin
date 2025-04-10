@@ -16,7 +16,7 @@ class ItemService(val itemRepository: ItemRepository){
 
     fun addItem(itemDto: ItemDTO): ItemDTO {
         val itemEntity = itemDto.let {
-            Item(null, it.name, it.description, it.price, it.quantity, it.category)
+            Item(null, it.name ?: "Unknown Item", it.description ?: "", it.price, it.quantity, it.category ?: "Uncategorized")
         }
         itemRepository.save(itemEntity)
         logger.info { "Item added: $itemEntity" }
@@ -38,7 +38,7 @@ class ItemService(val itemRepository: ItemRepository){
     fun addListOfItems(itemDTO: List<ItemDTO>): List<ItemDTO> {
 
         val itemEntity = itemDTO.map {
-            Item(null, it.name, it.description, it.price, it.quantity, it.category)
+            Item(null, it.name ?: "Unknown Item", it.description ?: "", it.price, it.quantity, it.category ?: "Uncategorized")
         }
         itemRepository.saveAll(itemEntity)
         logger.info { "Item added: $itemEntity" }
@@ -54,11 +54,11 @@ class ItemService(val itemRepository: ItemRepository){
             val existingItem = itemRepository.findById(itemId)
             return if(existingItem.isPresent){
                 existingItem.let {
-                    it.get().name = itemDTO.name
-                    it.get().description = itemDTO.description
+                    it.get().name = itemDTO.name ?: "Unknown Item"
+                    it.get().description = itemDTO.description ?: ""
                     it.get().price = itemDTO.price
                     it.get().quantity = itemDTO.quantity
-                    it.get().category = itemDTO.category
+                    it.get().category = itemDTO.category ?: "Uncategorized"
                     itemRepository.save(it.get())
                     ItemDTO(it.get().id, it.get().name, it.get().description, it.get().price, it.get().quantity, it.get().category)
                 }

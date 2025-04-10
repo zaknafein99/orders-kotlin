@@ -17,25 +17,25 @@ data class Order(
     @JoinColumn(name = "customer_id")
     val customer: Customer,
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "order_items",
-        joinColumns = [JoinColumn(name = "order_id")],
-        inverseJoinColumns = [JoinColumn(name = "item_id")]
-    )
-    val items: List<Item>,
+    @OneToMany(mappedBy = "order", cascade = [CascadeType.ALL], fetch = FetchType.EAGER)
+    val orderItems: MutableList<OrderItem> = mutableListOf(),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "truck_id")
-    val truck: Truck,
+    var truck: Truck,
 
     val date: LocalDate,
 
     val totalPrice: Double,
 
     @Enumerated(EnumType.STRING)
-    val status: OrderStatus = OrderStatus.PENDING
-)
+    var status: OrderStatus = OrderStatus.PENDING
+) {
+    // Helper property to get all items (for backward compatibility)
+    @get:Transient
+    val items: List<Item>
+        get() = orderItems.map { it.item }
+}
 
 enum class OrderStatus {
     PENDING,

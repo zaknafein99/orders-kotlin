@@ -2,6 +2,7 @@ package com.kotlin.orders.service
 
 import com.kotlin.orders.dto.OrderDTO
 import com.kotlin.orders.entity.Order
+import com.kotlin.orders.entity.OrderItem
 import com.kotlin.orders.entity.OrderStatus
 import com.kotlin.orders.mapper.OrderMapper
 import com.kotlin.orders.repository.CustomerRepository
@@ -13,6 +14,8 @@ import java.time.LocalDate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.slf4j.LoggerFactory
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class OrderService(
@@ -22,7 +25,9 @@ class OrderService(
         private val orderRepository: OrderRepository,
         private val orderMapper: OrderMapper
 ) {
+    private val logger = LoggerFactory.getLogger(OrderService::class.java)
 
+    @Transactional
     fun createOrder(orderDTO: OrderDTO): OrderDTO {
         val customer =
                 customerRepository.findById(orderDTO.customer.id!!).orElseThrow {
@@ -33,19 +38,42 @@ class OrderService(
                 truckRepository.findById(orderDTO.truck.id!!).orElseThrow {
                     EntityNotFoundException("Truck not found with ID ${orderDTO.truck.id}")
                 }
-
-        val orderEntity =
-                Order(
-                        id = null,
-                        customer = customer,
-                        items = orderDTO.items.map { itemRepository.findById(it.id!!).get() },
-                        truck = truck,
-                        date = LocalDate.now(),
-                        totalPrice = orderDTO.items.sumOf { it.price * it.quantity },
-                        status = OrderStatus.PENDING
-                )
-
-        return orderMapper.toDto(orderRepository.save(orderEntity))
+                
+        // Create the order first
+        val order = Order(
+            id = null,
+            customer = customer,
+            truck = truck,
+            date = LocalDate.now(),
+            totalPrice = orderDTO.items.sumOf { it.price * it.quantity },
+            status = OrderStatus.PENDING,
+            orderItems = mutableListOf() // Start with empty mutable list
+        )
+        
+        // Save the order to get an ID
+        val savedOrder = orderRepository.save(order)
+        
+        // Now create the order items
+        orderDTO.items.forEach { itemDTO ->
+            val item = itemRepository.findById(itemDTO.id!!).orElseThrow {
+                EntityNotFoundException("Item not found with ID ${itemDTO.id}")
+            }
+            
+            val orderItem = OrderItem(
+                id = null,
+                order = savedOrder,
+                item = item,
+                quantity = itemDTO.quantity
+            )
+            
+            // Add to the order's item collection
+            savedOrder.orderItems.add(orderItem)
+        }
+        
+        // Save the order again with all its items
+        val finalOrder = orderRepository.save(savedOrder)
+        
+        return orderMapper.toDto(finalOrder)
     }
 
     fun getOrders(pageable: Pageable): Page<OrderDTO> {
@@ -63,14 +91,36 @@ class OrderService(
         return orderRepository.findByStatus(OrderStatus.DELIVERED).map { orderMapper.toDto(it) }
     }
 
+    @Transactional
     fun markOrderAsDelivered(orderId: Int): OrderDTO {
+        logger.info("Marking order as delivered: $orderId")
         val order =
                 orderRepository.findById(orderId).orElseThrow {
                     EntityNotFoundException("Order not found with ID $orderId")
                 }
 
-        val updatedOrder = order.copy(status = OrderStatus.DELIVERED)
-        return orderMapper.toDto(orderRepository.save(updatedOrder))
+        // Update inventory quantities for all items in the order
+        order.orderItems.forEach { orderItem ->
+            val item = orderItem.item
+            val orderQuantity = orderItem.quantity
+            
+            logger.info("Updating inventory for item ${item.id} (${item.name}): current quantity ${item.quantity}")
+            
+            // Calculate new quantity
+            val currentQuantity = item.quantity
+            val newQuantity = Math.max(0, currentQuantity - orderQuantity)
+            
+            logger.info("Item ${item.id} (${item.name}): ${currentQuantity} - ${orderQuantity} = ${newQuantity}")
+            
+            // Update the item with new quantity
+            item.quantity = newQuantity
+            itemRepository.save(item)
+            logger.info("Item ${item.id} quantity updated to ${newQuantity}")
+        }
+
+        // Update order status to DELIVERED
+        order.status = OrderStatus.DELIVERED
+        return orderMapper.toDto(orderRepository.save(order))
     }
 
     fun getOrdersByCustomer(phoneNumber: String): List<Order> {
@@ -113,8 +163,8 @@ class OrderService(
                     EntityNotFoundException("Truck not found with ID $truckId")
                 }
 
-        val updatedOrder = order.copy(truck = truck)
-        return orderMapper.toDto(orderRepository.save(updatedOrder))
+        order.truck = truck
+        return orderMapper.toDto(orderRepository.save(order))
     }
 
     fun markAsDelivered(orderId: Int): OrderDTO {
@@ -137,5 +187,14 @@ class OrderService(
             e.printStackTrace()
             throw e
         }
+    }
+
+    @Transactional
+    fun saveOrder(order: Order): Order {
+        return orderRepository.save(order)
+    }
+
+    fun findById(id: Int): Order? {
+        return orderRepository.findById(id).orElse(null)
     }
 }

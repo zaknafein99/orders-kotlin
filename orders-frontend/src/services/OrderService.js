@@ -190,9 +190,12 @@ export default {
    * Fetch available items for ordering
    * @param {Number} page Page number (0-based)
    * @param {Number} size Items per page
+   * @param {Boolean} forceRefresh Force a fresh fetch from server (ignore cache)
    * @returns {Promise} Promise with items data
    */
-  getItems(page = 0, size = 10) {
+  getItems(page = 0, size = 10, forceRefresh = false) {
+    console.log(`Fetching items, page: ${page}, size: ${size}, forceRefresh: ${forceRefresh}`)
+    
     const token = localStorage.getItem('token')
     if (!token) {
       eventBus.emit('auth-error')
@@ -200,13 +203,23 @@ export default {
     }
 
     // Sort by name rather than id to maintain consistent sorting
-    return api.get(`/item?page=${page}&size=${size}&sort=name,asc`, {
+    return api.get(`/item?page=${page}&size=${size}&sort=name,asc${forceRefresh ? '&_t=' + new Date().getTime() : ''}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-    .then(response => response.data)
+    .then(response => {
+      console.log(`Items fetched successfully. Content array length: ${response.data?.content?.length || 0}`)
+      return response.data
+    })
     .catch(error => {
+      // Check if it's a 404 error for a specific item
+      if (error.response && error.response.status === 404) {
+        console.error('Item not found error:', error.response.data)
+        // Return empty data structure that matches expected format
+        return { content: [], totalPages: 0, totalElements: 0, size: size, number: page }
+      }
+      
       this.handleAuthError(error)
       throw error
     })
@@ -390,83 +403,58 @@ export default {
     
     console.log('Using token for deliver request:', token ? `${token.substring(0, 15)}...` : 'No token')
     
-    // Try using the status update endpoint directly without retrieving the order first
-    console.log('Attempting to mark order as delivered using status endpoint...')
+    // First try the main delivery endpoint
+    console.log('Attempting to mark order as delivered using dedicated endpoint...')
     
-    return api.put(`/orders/${orderId}/status`, {
-      status: 'DELIVERED'
-    }, {
+    return api.post(`/orders/${orderId}/deliver`, {}, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
     .then(response => {
-      console.log('Order marked as delivered successfully using status endpoint:', response.data)
+      console.log('Order marked as delivered successfully:', response.data)
       const updatedOrder = response.data
       
-      // Try to update inventory
-      if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
-        this.updateInventoryQuantities(updatedOrder.items)
-          .then(results => {
-            console.log('Inventory updated for delivered order items:', results)
-          })
-          .catch(err => {
-            console.error('Error updating inventory:', err)
-          })
-      } else {
-        console.log('No items found in the updated order, trying to retrieve order details...')
-        // Try to get order details to update inventory
-        api.get(`/orders/${orderId}`)
-          .then(orderResponse => {
-            const orderDetails = orderResponse.data
-            if (orderDetails && orderDetails.items && orderDetails.items.length > 0) {
-              this.updateInventoryQuantities(orderDetails.items)
-                .then(results => {
-                  console.log('Inventory updated after retrieving order details:', results)
-                })
-                .catch(err => {
-                  console.error('Error updating inventory after retrieving order details:', err)
-                })
-            }
-          })
-          .catch(err => {
-            console.error('Could not retrieve order details for inventory update:', err)
-          })
-      }
+      // The backend should have updated the inventory automatically
+      console.log('Backend should have updated inventory. Order was marked as delivered successfully.')
       
       // Refresh order tables
       this.refreshOrders(updatedOrder)
+      
+      // Also refresh items to update their quantities in the UI
+      this.refreshItems()
+        .catch(error => console.error('Failed to refresh items after delivery:', error));
+      
       return updatedOrder
     })
     .catch(firstError => {
-      console.warn('Status update approach failed:', firstError.message)
-      console.warn('Trying direct POST to deliver endpoint...')
+      console.warn('Direct deliver endpoint failed:', firstError.message)
+      console.warn('Trying status update endpoint...')
       
-      // Try the deliver endpoint
-      return api.post(`/orders/${orderId}/deliver`, {}, {
+      // Try the status update endpoint as fallback
+      return api.put(`/orders/${orderId}/status`, {
+        status: 'DELIVERED'
+      }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
       .then(response => {
-        console.log('Order marked as delivered successfully using deliver endpoint:', response.data)
+        console.log('Order marked as delivered successfully using status endpoint:', response.data)
         const updatedOrder = response.data
         
-        // Update inventory if possible
-        if (updatedOrder && updatedOrder.items && updatedOrder.items.length > 0) {
-          this.updateInventoryQuantities(updatedOrder.items)
-            .then(results => {
-              console.log('Inventory updated for delivered order items:', results)
-            })
-            .catch(err => {
-              console.error('Error updating inventory:', err)
-            })
-        }
+        // The backend should have updated the inventory automatically
+        console.log('Backend should have updated inventory. Order status was changed to DELIVERED successfully.')
         
         // Refresh order tables
         this.refreshOrders(updatedOrder)
+        
+        // Also refresh items to update their quantities in the UI
+        this.refreshItems()
+          .catch(error => console.error('Failed to refresh items after delivery:', error));
+        
         return updatedOrder
       })
       .catch(secondError => {
@@ -575,7 +563,24 @@ export default {
         console.error('Resource not found error. URL:', error.config ? error.config.url : 'No URL available')
         console.error('Request method:', error.config ? error.config.method : 'No method available')
         
-        eventBus.emit('api-error', { message: 'Resource not found', details: error.response.data })
+        // Check if this is a missing item by examining the URL
+        const url = error.config ? error.config.url : '';
+        if (url && url.includes('/item/')) {
+          // Extract the item ID from the URL
+          const matches = url.match(/\/item\/(\d+)/);
+          const itemId = matches ? matches[1] : 'unknown';
+          console.error(`Item with ID ${itemId} not found`);
+          
+          // Use a more specific message for missing items
+          eventBus.emit('api-error', { 
+            message: `Item #${itemId} does not exist or has been deleted`, 
+            details: error.response.data,
+            recoverable: true
+          });
+        } else {
+          // Generic 404 error
+          eventBus.emit('api-error', { message: 'Resource not found', details: error.response.data });
+        }
       }
     } else if (error.request) {
       // The request was made but no response was received
@@ -611,6 +616,36 @@ export default {
   },
   
   /**
+   * Refresh item data from the server
+   * This should be called whenever item quantities might have changed (e.g., after an order is delivered)
+   */
+  refreshItems() {
+    console.log('Refreshing items data to update quantities...');
+    
+    // Emit an event to trigger a refresh in UI components
+    eventBus.emit('refresh-items');
+    
+    // Get fresh items data from server with force refresh flag to avoid cache
+    return this.getItems(0, 100, true)
+      .then(items => {
+        console.log(`Successfully refreshed ${items.content?.length || 0} items`);
+        return items;
+      })
+      .catch(error => {
+        console.error('Error refreshing items:', error);
+        // Don't rethrow the error, instead return an empty result
+        // This allows the app to continue even if an item is missing
+        console.log('Continuing despite item refresh error');
+        eventBus.emit('api-error', { 
+          message: 'Unable to refresh some items', 
+          details: error.message || 'Unknown error',
+          recoverable: true
+        });
+        return { content: [] };
+      });
+  },
+  
+  /**
    * Update inventory quantities after an order is marked as delivered
    * This method should ONLY be called when an order is delivered, not when it's created.
    * It decreases the inventory quantities based on the items in the delivered order.
@@ -631,98 +666,224 @@ export default {
       return Promise.reject(new Error('Authentication required'))
     }
     
-    console.log('Updating inventory quantities for items:', items)
+    console.log('Updating inventory quantities for items:', JSON.stringify(items))
     
     // Create an array of promises for each item update
     const updatePromises = items.map(item => {
-      // Extract the item ID and quantity based on the data structure
-      // Handle different possible formats:
-      // 1. Direct format: { id: 123, name: 'Item', quantity: 5 }
-      // 2. Nested item format: { item: { id: 123, name: 'Item' }, quantity: 5 }
-      // 3. Nested id format: { itemId: 123, quantity: 5 }
-      const itemId = item.id || (item.item && item.item.id) || item.itemId
-      const itemName = item.name || (item.item && item.item.name) || 'Unknown Item'
-      const itemQuantity = item.quantity || 0
-      
-      console.log(`Processing item for inventory update: ID=${itemId}, Name=${itemName}, Quantity=${itemQuantity}`)
-      
-      if (!itemId) {
-        console.error('Cannot update inventory for item without ID:', item)
-        return Promise.resolve({
-          error: 'Invalid item format - missing ID',
-          item
-        })
-      }
-      
-      // First, get the current item to retrieve its properties and current quantity
-      // Use sort=name,asc for consistent sorting with other item requests
-      return api.get(`/item/list?page=0&size=100&sort=name,asc`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => {
-        let itemData = null;
+      try {
+        // Extract the item ID and quantity based on the data structure
+        // Log the full item object for debugging
+        console.log('Processing item:', JSON.stringify(item))
         
-        if (response.data && response.data.content) {
-          // Find the item in the paginated response
-          itemData = response.data.content.find(i => i.id === itemId);
-        } else if (Array.isArray(response.data)) {
-          // Find the item in the array response
-          itemData = response.data.find(i => i.id === itemId);
+        // Handle different possible formats:
+        // 1. Direct format: { id: 123, name: 'Item', quantity: 5 }
+        // 2. Nested item format: { item: { id: 123, name: 'Item' }, quantity: 5 }
+        // 3. Nested id format: { itemId: 123, quantity: 5 }
+        let itemId = null;
+        if (item.id) {
+          itemId = parseInt(item.id);
+          console.log(`Found direct item ID: ${item.id} (parsed as ${itemId})`);
+        } else if (item.item && item.item.id) {
+          itemId = parseInt(item.item.id);
+          console.log(`Found nested item ID: ${item.item.id} (parsed as ${itemId})`);
+        } else if (item.itemId) {
+          itemId = parseInt(item.itemId);
+          console.log(`Found itemId property: ${item.itemId} (parsed as ${itemId})`);
         }
         
-        if (!itemData) {
-          console.error(`Item with ID ${itemId} not found in inventory list`);
-          throw new Error(`Item with ID ${itemId} not found`);
+        let itemName = item.name || (item.item && item.item.name) || 'Unknown Item';
+        let itemQuantity = 0;
+        
+        if (typeof item.quantity !== 'undefined') {
+          itemQuantity = parseInt(item.quantity);
+          console.log(`Found direct quantity: ${item.quantity} (parsed as ${itemQuantity})`);
+        } else if (item.item && typeof item.item.quantity !== 'undefined') {
+          itemQuantity = parseInt(item.item.quantity);
+          console.log(`Found nested quantity: ${item.item.quantity} (parsed as ${itemQuantity})`);
         }
         
-        console.log(`Found item ${itemId} in inventory:`, itemData);
+        console.log(`Processing item for inventory update: ID=${itemId}, Name=${itemName}, Quantity=${itemQuantity}`)
         
-        // Calculate the new quantity by subtracting the order quantity
-        const currentQuantity = itemData.quantity || 0;
-        const newQuantity = Math.max(0, currentQuantity - itemQuantity);
+        if (!itemId) {
+          console.error('Cannot update inventory for item without ID:', item)
+          return Promise.resolve({
+            error: 'Invalid item format - missing ID',
+            item
+          })
+        }
         
-        console.log(`Updating inventory for item ${itemId} (${itemName}): ${currentQuantity} - ${itemQuantity} = ${newQuantity}`);
+        if (isNaN(itemQuantity) || itemQuantity <= 0) {
+          console.warn(`Item ${itemId} has invalid quantity (${itemQuantity}), skipping inventory update`);
+          return Promise.resolve({
+            itemId,
+            name: itemName,
+            skipped: true,
+            reason: `Invalid quantity: ${itemQuantity}`
+          });
+        }
         
-        // Prepare the updated item with all required fields
-        const updatedItem = {
-          id: itemId,
-          name: itemData.name,
-          description: itemData.description || "",
-          price: Number(itemData.price),
-          quantity: newQuantity,
-          category: itemData.category || "Uncategorized"
-        };
-        
-        // Update the item with the PUT endpoint
-        return api.put(`/item/${itemId}`, updatedItem, {
+        // First, get the current item to retrieve its properties and current quantity
+        // Use sort=name,asc for consistent sorting with other item requests
+        return api.get(`/item/${itemId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`
           }
         })
-        .then(updateResponse => {
-          console.log(`Inventory updated for item ${itemId} using PUT: ${updateResponse.data}`);
-          return updateResponse.data;
+        .then(response => {
+          const itemData = response.data;
+          console.log(`Found item ${itemId} directly:`, itemData);
+          
+          if (!itemData) {
+            console.error(`Item with ID ${itemId} not found directly`);
+            // Fall back to list endpoint
+            return api.get(`/item/list?page=0&size=100&sort=name,asc`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            })
+            .then(listResponse => {
+              let foundItem = null;
+              
+              if (listResponse.data && listResponse.data.content) {
+                // Find the item in the paginated response
+                foundItem = listResponse.data.content.find(i => parseInt(i.id) === itemId);
+                console.log(`Searching for item with ID ${itemId} in ${listResponse.data.content.length} items. Found:`, foundItem);
+              } else if (Array.isArray(listResponse.data)) {
+                // Find the item in the array response
+                foundItem = listResponse.data.find(i => parseInt(i.id) === itemId);
+                console.log(`Searching for item with ID ${itemId} in ${listResponse.data.length} items. Found:`, foundItem);
+              }
+              
+              if (!foundItem) {
+                throw new Error(`Item with ID ${itemId} not found in inventory list`);
+              }
+              
+              return foundItem;
+            });
+          }
+          
+          return itemData;
+        })
+        .then(itemData => {
+          // Calculate the new quantity by subtracting the order quantity
+          const currentQuantity = parseInt(itemData.quantity) || 0;
+          const newQuantity = Math.max(0, currentQuantity - itemQuantity);
+          
+          console.log(`Updating inventory for item ${itemId} (${itemName}): ${currentQuantity} - ${itemQuantity} = ${newQuantity}`);
+          
+          // Prepare the updated item with all required fields
+          const updatedItem = {
+            id: itemId,
+            name: itemData.name,
+            description: itemData.description || "",
+            price: Number(itemData.price),
+            quantity: newQuantity,
+            category: itemData.category || "Uncategorized"
+          };
+          
+          console.log('Sending PUT request with updated item:', updatedItem);
+          
+          // Update the item with the PUT endpoint
+          return api.put(`/item/${itemId}`, updatedItem, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          .then(updateResponse => {
+            console.log(`Inventory updated for item ${itemId} using PUT:`, updateResponse.data);
+            return {
+              success: true,
+              itemId,
+              name: itemData.name,
+              previousQuantity: currentQuantity,
+              newQuantity,
+              data: updateResponse.data
+            };
+          })
+          .catch(error => {
+            console.error(`Error updating inventory for item ${itemId}:`, error);
+            console.error('Request details:', {
+              url: `/item/${itemId}`,
+              method: 'PUT',
+              error: error.message
+            });
+            
+            // Check if it's a 404 Not Found error
+            if (error.response && error.response.status === 404) {
+              // Provide more specific information about the missing item
+              console.warn(`Item #${itemId} (${itemName}) was not found in the inventory. It may have been deleted.`);
+              
+              // Show a notification to the user about the missing item
+              eventBus.emit('api-error', { 
+                message: `Item #${itemId} (${itemName}) does not exist or has been deleted.`, 
+                details: 'This item was referenced in an order but could not be found in the inventory.',
+                recoverable: true 
+              });
+              
+              // Return a structured error object for better tracking
+              return {
+                success: false,
+                itemId,
+                name: itemName,
+                error: 'Item not found in inventory',
+                code: 'ITEM_NOT_FOUND',
+                status: 404
+              };
+            }
+            
+            // Handle other types of errors
+            return {
+              success: false,
+              itemId,
+              name: itemName,
+              error: error.message
+            };
+          });
         })
         .catch(error => {
-          console.error(`Error updating inventory for item ${itemId}:`, error);
-          console.error('Request details:', {
-            url: `/item/${itemId}`,
-            method: 'PUT',
-            error: error.message
-          });
+          console.error(`Error processing item ${itemId} for inventory update:`, error);
           
-          // Don't reject the whole promise chain, just return the error
+          // Check if it's a 404 Not Found error
+          if (error.response && error.response.status === 404) {
+            // Provide more specific information about the missing item
+            console.warn(`Item #${itemId} (${itemName}) was not found in the inventory. It may have been deleted.`);
+            
+            // Show a notification to the user about the missing item
+            eventBus.emit('api-error', { 
+              message: `Item #${itemId} (${itemName}) does not exist or has been deleted.`, 
+              details: 'This item was referenced in an order but could not be found in the inventory.',
+              recoverable: true 
+            });
+            
+            // Return a structured error object for better tracking
+            return {
+              success: false,
+              itemId,
+              name: itemName,
+              error: 'Item not found in inventory',
+              code: 'ITEM_NOT_FOUND',
+              status: 404
+            };
+          }
+          
+          // Handle other types of errors
           return {
-            itemId: itemId,
+            success: false,
+            itemId,
             name: itemName,
-            error: error.message || 'Unknown error'
+            error: error.message
           };
         });
-      })
-    })
+      } catch (e) {
+        console.error('Unexpected error processing item:', e);
+        return Promise.resolve({
+          success: false,
+          error: e.message,
+          item
+        });
+      }
+    });
     
     return Promise.all(updatePromises);
   },

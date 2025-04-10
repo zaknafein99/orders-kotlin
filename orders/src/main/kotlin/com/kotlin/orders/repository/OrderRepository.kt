@@ -8,7 +8,9 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
+import org.springframework.stereotype.Repository
 
+@Repository
 interface OrderRepository : CrudRepository<Order, Int> {
 
     fun findByCustomerPhoneNumber(phoneNumber: String): List<Order>
@@ -23,4 +25,8 @@ interface OrderRepository : CrudRepository<Order, Int> {
     fun findAll(pageable: Pageable): Page<Order>
 
     fun findByStatus(status: OrderStatus): List<Order>
+
+    fun findByDate(date: LocalDate): List<Order>
+
+    fun findByDateBetween(startDate: LocalDate, endDate: LocalDate): List<Order>
 }

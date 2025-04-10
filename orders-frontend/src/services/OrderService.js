@@ -190,9 +190,12 @@ export default {
    * Fetch available items for ordering
    * @param {Number} page Page number (0-based)
    * @param {Number} size Items per page
+   * @param {Boolean} forceRefresh Force a fresh fetch from server (ignore cache)
    * @returns {Promise} Promise with items data
    */
-  getItems(page = 0, size = 10) {
+  getItems(page = 0, size = 10, forceRefresh = false) {
+    console.log(`Fetching items, page: ${page}, size: ${size}, forceRefresh: ${forceRefresh}`)
+    
     const token = localStorage.getItem('token')
     if (!token) {
       eventBus.emit('auth-error')
@@ -200,13 +203,23 @@ export default {
     }
 
     // Sort by name rather than id to maintain consistent sorting
-    return api.get(`/item?page=${page}&size=${size}&sort=name,asc`, {
+    return api.get(`/item?page=${page}&size=${size}&sort=name,asc${forceRefresh ? '&_t=' + new Date().getTime() : ''}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-    .then(response => response.data)
+    .then(response => {
+      console.log(`Items fetched successfully. Content array length: ${response.data?.content?.length || 0}`)
+      return response.data
+    })
     .catch(error => {
+      // Check if it's a 404 error for a specific item
+      if (error.response && error.response.status === 404) {
+        console.error('Item not found error:', error.response.data)
+        // Return empty data structure that matches expected format
+        return { content: [], totalPages: 0, totalElements: 0, size: size, number: page }
+      }
+      
       this.handleAuthError(error)
       throw error
     })
@@ -408,6 +421,11 @@ export default {
       
       // Refresh order tables
       this.refreshOrders(updatedOrder)
+      
+      // Also refresh items to update their quantities in the UI
+      this.refreshItems()
+        .catch(error => console.error('Failed to refresh items after delivery:', error));
+      
       return updatedOrder
     })
     .catch(firstError => {
@@ -432,6 +450,11 @@ export default {
         
         // Refresh order tables
         this.refreshOrders(updatedOrder)
+        
+        // Also refresh items to update their quantities in the UI
+        this.refreshItems()
+          .catch(error => console.error('Failed to refresh items after delivery:', error));
+        
         return updatedOrder
       })
       .catch(secondError => {
@@ -540,7 +563,24 @@ export default {
         console.error('Resource not found error. URL:', error.config ? error.config.url : 'No URL available')
         console.error('Request method:', error.config ? error.config.method : 'No method available')
         
-        eventBus.emit('api-error', { message: 'Resource not found', details: error.response.data })
+        // Check if this is a missing item by examining the URL
+        const url = error.config ? error.config.url : '';
+        if (url && url.includes('/item/')) {
+          // Extract the item ID from the URL
+          const matches = url.match(/\/item\/(\d+)/);
+          const itemId = matches ? matches[1] : 'unknown';
+          console.error(`Item with ID ${itemId} not found`);
+          
+          // Use a more specific message for missing items
+          eventBus.emit('api-error', { 
+            message: `Item #${itemId} does not exist or has been deleted`, 
+            details: error.response.data,
+            recoverable: true
+          });
+        } else {
+          // Generic 404 error
+          eventBus.emit('api-error', { message: 'Resource not found', details: error.response.data });
+        }
       }
     } else if (error.request) {
       // The request was made but no response was received
@@ -573,6 +613,36 @@ export default {
     
     this.getDeliveredOrders(true)
       .catch(error => console.error('Error refreshing delivered orders:', error));
+  },
+  
+  /**
+   * Refresh item data from the server
+   * This should be called whenever item quantities might have changed (e.g., after an order is delivered)
+   */
+  refreshItems() {
+    console.log('Refreshing items data to update quantities...');
+    
+    // Emit an event to trigger a refresh in UI components
+    eventBus.emit('refresh-items');
+    
+    // Get fresh items data from server with force refresh flag to avoid cache
+    return this.getItems(0, 100, true)
+      .then(items => {
+        console.log(`Successfully refreshed ${items.content?.length || 0} items`);
+        return items;
+      })
+      .catch(error => {
+        console.error('Error refreshing items:', error);
+        // Don't rethrow the error, instead return an empty result
+        // This allows the app to continue even if an item is missing
+        console.log('Continuing despite item refresh error');
+        eventBus.emit('api-error', { 
+          message: 'Unable to refresh some items', 
+          details: error.message || 'Unknown error',
+          recoverable: true
+        });
+        return { content: [] };
+      });
   },
   
   /**
@@ -739,17 +809,65 @@ export default {
               error: error.message
             });
             
-            // Don't reject the whole promise chain, just return the error
+            // Check if it's a 404 Not Found error
+            if (error.response && error.response.status === 404) {
+              // Provide more specific information about the missing item
+              console.warn(`Item #${itemId} (${itemName}) was not found in the inventory. It may have been deleted.`);
+              
+              // Show a notification to the user about the missing item
+              eventBus.emit('api-error', { 
+                message: `Item #${itemId} (${itemName}) does not exist or has been deleted.`, 
+                details: 'This item was referenced in an order but could not be found in the inventory.',
+                recoverable: true 
+              });
+              
+              // Return a structured error object for better tracking
+              return {
+                success: false,
+                itemId,
+                name: itemName,
+                error: 'Item not found in inventory',
+                code: 'ITEM_NOT_FOUND',
+                status: 404
+              };
+            }
+            
+            // Handle other types of errors
             return {
               success: false,
               itemId,
               name: itemName,
-              error: error.message || 'Unknown error'
+              error: error.message
             };
           });
         })
         .catch(error => {
           console.error(`Error processing item ${itemId} for inventory update:`, error);
+          
+          // Check if it's a 404 Not Found error
+          if (error.response && error.response.status === 404) {
+            // Provide more specific information about the missing item
+            console.warn(`Item #${itemId} (${itemName}) was not found in the inventory. It may have been deleted.`);
+            
+            // Show a notification to the user about the missing item
+            eventBus.emit('api-error', { 
+              message: `Item #${itemId} (${itemName}) does not exist or has been deleted.`, 
+              details: 'This item was referenced in an order but could not be found in the inventory.',
+              recoverable: true 
+            });
+            
+            // Return a structured error object for better tracking
+            return {
+              success: false,
+              itemId,
+              name: itemName,
+              error: 'Item not found in inventory',
+              code: 'ITEM_NOT_FOUND',
+              status: 404
+            };
+          }
+          
+          // Handle other types of errors
           return {
             success: false,
             itemId,
